@@ -236,7 +236,7 @@ test("Git rendering reuses the cwd-owned provider only on demand and refreshes a
     runtime?.disposeFooter();
     // Mirror Pi's applyRuntimeSettings -> bindExtensions -> session_start ordering.
     providerCwd = cwd;
-    writeFileSync(join(root, "settings.json"), JSON.stringify({ powerline: { welcome: false, layout, ...powerline } }));
+    writeFileSync(join(root, "settings.json"), JSON.stringify({ powerline: { welcome: false, placement: "below", layout, ...powerline } }));
     runtime = createCtx({ cwd, footerData, theme: { ...fakeTheme(), fg: (color, text) => `<${color}>${text}</${color}>` } });
     await fake.handlers.get("session_start")?.({ reason: "resume" }, runtime.ctx);
     calls.length = 0;
@@ -306,7 +306,7 @@ test("footer queue demand follows resolved layout while preview and picker stay 
     { layout: { left: [], right: [], secondary: ["queue"] } },
   ]) {
     const root = mkdtempSync(join(tmpdir(), "powerline-queue-display-"));
-    writeFileSync(join(root, "settings.json"), JSON.stringify({ powerline: { welcome: false, ...powerline } }));
+    writeFileSync(join(root, "settings.json"), JSON.stringify({ powerline: { welcome: false, placement: "below", ...powerline } }));
     const inbox = join(root, "powerline-footer", "inbox.jsonl");
     const store = new PowerlineQueueStore(inbox, join(root, "projects.json"));
     store.add({ text: "independent preview", source: { cwd: root }, target: { kind: "global" }, intent: "follow-up" });

@@ -2942,7 +2942,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       },
     }), { placement: "aboveEditor" });
 
-    ctx.ui.setWidget("powerline-top", (_tui: any, theme: Theme) => ({
+    ctx.ui.setWidget("powerline-top", config.placement === "below" ? (_tui: any, theme: Theme) => ({
       dispose() {},
       invalidate() {
         resetLayoutCache();
@@ -2950,7 +2950,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       render(width: number): string[] {
         return measureWidget("primary", () => renderPowerlinePrimaryLines(width, theme));
       },
-    }), { placement: config.placement === "below" ? "belowEditor" : "aboveEditor" });
+    }) : undefined, { placement: "belowEditor" });
 
     ctx.ui.setWidget("powerline-secondary", (_tui: any, theme: Theme) => ({
       dispose() {},
@@ -3207,19 +3207,59 @@ export default function powerlineFooter(pi: ExtensionAPI) {
               : originalRender(width);
           }
 
+          const contentWidth = Math.max(1, width - 6);
+          const renderRounded = (lines: string[]): string[] => {
+            if (lines.length === 0) return lines;
+
+            let bottomBorderIndex = lines.length - 1;
+            for (let i = lines.length - 1; i >= 1; i--) {
+              const stripped = lines[i]?.replace(/\x1b\[[0-9;]*m/g, "") || "";
+              if (stripped.length > 0 && /^─{3,}/.test(stripped)) {
+                bottomBorderIndex = i;
+                break;
+              }
+            }
+
+            const bc = (s: string) => ctx.ui.theme.fg("borderAccent", s);
+            const result: string[] = [];
+            const statusContent = renderPowerlinePrimaryLines(width - 4, ctx.ui.theme)[0] ?? "";
+            const statusWidth = visibleWidth(statusContent);
+            const fillWidth = Math.max(0, width - 4 - statusWidth);
+            result.push(bc("╭─") + statusContent + bc("─".repeat(fillWidth)) + bc("─╮"));
+
+            for (let i = 1; i < bottomBorderIndex; i++) {
+              const line = lines[i] || "";
+              const padding = " ".repeat(Math.max(0, contentWidth - visibleWidth(line)));
+              const isLastContent = i === bottomBorderIndex - 1;
+              result.push(isLastContent
+                ? `${bc("╰─")} ${line}${padding} ${bc("─╯")}`
+                : `${bc("│")}  ${line}${padding}  ${bc("│")}`);
+            }
+
+            if (bottomBorderIndex === 1) {
+              result.push(`${bc("╰─")} ${" ".repeat(contentWidth)} ${bc("─╯")}`);
+            }
+
+            for (let i = bottomBorderIndex + 1; i < lines.length; i++) {
+              result.push(lines[i] || "");
+            }
+
+            return result;
+          };
+
           if (editorPerf.options.fastRender) {
             const fastLines = editorPerf.options.enabled
-              ? editorPerf.measure("editor.render.fast-probe", () => renderFastPowerlineEditor(editor, width, {
+              ? editorPerf.measure("editor.render.fast-probe", () => renderFastPowerlineEditor(editor, contentWidth, {
                   bashModeActive,
                   completionsEnabled: bashModeSettings.completions,
                 }))
-              : renderFastPowerlineEditor(editor, width, {
+              : renderFastPowerlineEditor(editor, contentWidth, {
                   bashModeActive,
                   completionsEnabled: bashModeSettings.completions,
                 });
             if (fastLines) {
               if (editorPerf.options.enabled) editorPerf.count("editor.render.fast-hit");
-              return fastLines;
+              return renderRounded(fastLines);
             }
           }
 
@@ -3229,47 +3269,10 @@ export default function powerlineFooter(pi: ExtensionAPI) {
               : originalRender(width);
           }
 
-          const bc = (s: string) => `${getFgAnsiCode("sep")}${s}${ansi.reset}`;
-          const promptGlyph = bashModeActive ? "$" : ">";
-          const promptColor = ansi.getFgAnsi(200, 200, 200);
-          const prompt = `${promptColor}${promptGlyph}${ansi.reset}`;
-          const promptPrefix = ` ${prompt} `;
-          const contPrefix = "   ";
-          const contentWidth = Math.max(1, width - 3);
           const lines = editorPerf.options.enabled
             ? editorPerf.measure("editor.render.base", () => originalRender(contentWidth))
             : originalRender(contentWidth);
-
-          if (lines.length === 0) return lines;
-
-          let bottomBorderIndex = lines.length - 1;
-          for (let i = lines.length - 1; i >= 1; i--) {
-            const stripped = lines[i]?.replace(/\x1b\[[0-9;]*m/g, "") || "";
-            if (stripped.length > 0 && /^─{3,}/.test(stripped)) {
-              bottomBorderIndex = i;
-              break;
-            }
-          }
-
-          const result: string[] = [];
-          result.push(" " + bc("─".repeat(width - 2)));
-
-          for (let i = 1; i < bottomBorderIndex; i++) {
-            const prefix = i === 1 ? promptPrefix : contPrefix;
-            result.push(`${prefix}${lines[i] || ""}`);
-          }
-
-          if (bottomBorderIndex === 1) {
-            result.push(`${promptPrefix}${" ".repeat(contentWidth)}`);
-          }
-
-          result.push(" " + bc("─".repeat(width - 2)));
-
-          for (let i = bottomBorderIndex + 1; i < lines.length; i++) {
-            result.push(lines[i] || "");
-          }
-
-          return result;
+          return renderRounded(lines);
         };
 
         return editorPerf.options.enabled
