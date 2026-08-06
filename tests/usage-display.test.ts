@@ -60,7 +60,7 @@ function createSegmentContext(options: StatusLineSegmentOptions = {}, overrides:
 
 // ── context_pct format ──────────────────────────────────────────────────────
 
-test("context_pct defaults to the full tokens/window rendering", () => {
+test("context_pct defaults to the demo percentage/window rendering", () => {
   const ctx = createSegmentContext({}, {
     contextTokens: 12300,
     contextWindow: 200000,
@@ -68,7 +68,7 @@ test("context_pct defaults to the full tokens/window rendering", () => {
   });
 
   const rendered = renderSegment("context_pct", ctx);
-  assert.equal(stripAnsi(rendered.content), "◫ 12k/200k (6.2%) AC");
+  assert.equal(stripAnsi(rendered.content), "◫ 6.2%/200k AC");
 });
 
 test("context_pct percent format renders a bare rounded percentage", () => {

@@ -116,14 +116,14 @@ test("cost segment supports subscription display modes and converted currencies"
   assert.deepEqual(convertedCurrency, { content: "¥9.00", visible: true });
 });
 
-test("context segment shows used tokens, maximum, and percentage", () => {
+test("context segment shows percentage and maximum", () => {
   const context = renderSegment("context_pct", createSegmentContext({
     contextTokens: 4_500,
     contextPercent: 1.7,
     contextWindow: 272_000,
   }));
 
-  assert.equal(stripAnsi(context.content), "◫ 4.5k/272k (1.7%) AC");
+  assert.equal(stripAnsi(context.content), "◫ 1.7%/272k AC");
   assert.equal(context.visible, true);
 });
 

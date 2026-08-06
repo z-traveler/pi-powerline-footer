@@ -44,6 +44,16 @@ function formatDuration(ms: number): string {
 // Segment Implementations
 // ═══════════════════════════════════════════════════════════════════════════
 
+const piSegment: StatusLineSegment = {
+  id: "pi",
+  render(ctx) {
+    const icon = getIcons().pi;
+    return icon
+      ? { content: color(ctx, "pi", icon), visible: true }
+      : { content: "", visible: false };
+  },
+};
+
 const modelSegment: StatusLineSegment = {
   id: "model",
   render(ctx) {
@@ -215,7 +225,7 @@ const thinkingSegment: StatusLineSegment = {
       xhigh: "xhigh",
     };
     const label = levelText[level] || level;
-    const content = `think:${label}`;
+    const content = `thinking:${label}`;
 
     if (level === "high" || level === "xhigh" || level === "max") {
       return { content: rainbow(content), visible: true };
@@ -342,15 +352,13 @@ const contextPctSegment: StatusLineSegment = {
     if (ctx.customCompactionEnabled) return { content: "", visible: false };
 
     const icons = getIcons();
-    const { contextTokens, contextPercent, contextWindow } = ctx;
+    const { contextPercent, contextWindow } = ctx;
 
     const autoIcon = ctx.autoCompactEnabled && icons.auto ? ` ${icons.auto}` : "";
     const percentOnly = ctx.options.context?.format === "percent";
-    // "full" (default): tokens/window + one-decimal percentage + auto-compact icon.
-    // "percent": bare rounded percentage, threshold-colored, no icons.
     const text = percentOnly
       ? `${Math.round(contextPercent)}%`
-      : `${formatTokens(contextTokens)}/${formatTokens(contextWindow)} (${contextPercent.toFixed(1)}%)${autoIcon}`;
+      : `${contextPercent.toFixed(1)}%/${formatTokens(contextWindow)}${autoIcon}`;
 
     // Icon outside color, text inside - use semantic colors for thresholds
     let content: string;
@@ -508,6 +516,7 @@ const extensionStatusesSegment: StatusLineSegment = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const SEGMENTS: Record<BuiltinStatusLineSegmentId, StatusLineSegment> = {
+  pi: piSegment,
   model: modelSegment,
   shell_mode: shellModeSegment,
   path: pathSegment,

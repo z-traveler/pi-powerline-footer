@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.12.1-z2] - 2026-08-06
+
+### Changed
+- **Demo status format** — Restored the leading Pi segment, `thinking:` label, and percentage/window context format used by the pi-subagents demo.
+
 ## [0.12.1-z1] - 2026-08-06
 
 ### Changed

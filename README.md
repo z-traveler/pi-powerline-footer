@@ -23,7 +23,7 @@ Customizes the default [pi](https://github.com/badlogic/pi-mono) editor with a p
 
 **Native Pi layout** — Pi owns fixed input, feed scrolling, selection, and terminal behavior; this extension supplies powerline widgets and the custom bash/stash/editor integrations.
 
-**Live thinking level indicator** — Shows current thinking level (`think:off`, `think:med`, etc.) with per-level colors. High, xhigh, and max levels use a rainbow effect inspired by Claude Code's ultrathink.
+**Live thinking level indicator** — Shows current thinking level (`thinking:off`, `thinking:med`, etc.) with per-level colors. High, xhigh, and max levels use a rainbow effect inspired by Claude Code's ultrathink.
 
 **Smart defaults** — Nerd Font auto-detection for iTerm, WezTerm, Kitty, Ghostty, and Alacritty with ASCII fallbacks. Colors matched to oh-my-pi's dark theme.
 
@@ -231,7 +231,7 @@ Segment display formats (opt-in; defaults match the historical rendering):
 
 | Segment option | Values | Default | Effect |
 |---|---|---|---|
-| `"context": { "format" }` | `"full"` / `"percent"` | `"full"` | `"percent"` shows a bare rounded `83%` (threshold-colored, no icon) instead of `12k/200k (6.2%)` |
+| `"context": { "format" }` | `"full"` / `"percent"` | `"full"` | `"percent"` shows a bare rounded `83%` (threshold-colored, no icon) instead of `6.2%/200k` |
 | `"cache_read": { "format" }` | `"tokens"` / `"percent"` / `"both"` | `"tokens"` | `"percent"` shows the cache hit rate `cacheRead / (input + cacheRead)` instead of the raw token count; `"both"` shows raw tokens plus the hit rate, e.g. `cache in: 12k (80%)` |
 
 ```json
@@ -415,13 +415,13 @@ The thinking segment shows live updates when you change thinking level:
 
 | Level | Display | Color |
 |-------|---------|-------|
-| off | `think:off` | gray |
-| minimal | `think:min` | purple-gray |
-| low | `think:low` | blue |
-| medium | `think:med` | teal |
-| high | `think:high` | rainbow |
-| xhigh | `think:xhigh` | rainbow |
-| max | `think:max` | rainbow |
+| off | `thinking:off` | gray |
+| minimal | `thinking:min` | purple-gray |
+| low | `thinking:low` | blue |
+| medium | `thinking:med` | teal |
+| high | `thinking:high` | rainbow |
+| xhigh | `thinking:xhigh` | rainbow |
+| max | `thinking:max` | rainbow |
 
 ## Path Display
 
@@ -465,7 +465,7 @@ The origin remote is detected (SSH or HTTPS) and mapped to an icon: GitHub (), G
 
 ## Segments
 
-`model` · `thinking` · `shell_mode` · `path` · `git` · `subagents` · `token_in` · `token_out` · `token_total` · `cost` · `context_pct` · `context_total` · `time_spent` · `time` · `session` · `hostname` · `cache_read` · `cache_write` · `extension_statuses`
+`pi` · `model` · `thinking` · `shell_mode` · `path` · `git` · `subagents` · `token_in` · `token_out` · `token_total` · `cost` · `context_pct` · `context_total` · `time_spent` · `time` · `session` · `hostname` · `cache_read` · `cache_write` · `extension_statuses`
 
 ## Separators
 
@@ -479,6 +479,7 @@ Colors are configurable via pi's theme system. Each preset defines its own color
 
 | Semantic | Theme Color | Description |
 |----------|-------------|-------------|
+| `pi` | `#febc38` | Pi mark |
 | `model` | `#d787af` | Model name |
 | `shellMode` | `accent` | Bash mode segment |
 | `path` | `#00afaf` | Directory path |
