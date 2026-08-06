@@ -44,6 +44,16 @@ function formatDuration(ms: number): string {
 // Segment Implementations
 // ═══════════════════════════════════════════════════════════════════════════
 
+const piSegment: StatusLineSegment = {
+  id: "pi",
+  render(ctx) {
+    const icon = getIcons().pi;
+    return icon
+      ? { content: color(ctx, "pi", icon), visible: true }
+      : { content: "", visible: false };
+  },
+};
+
 const modelSegment: StatusLineSegment = {
   id: "model",
   render(ctx) {
@@ -215,7 +225,7 @@ const thinkingSegment: StatusLineSegment = {
       xhigh: "xhigh",
     };
     const label = levelText[level] || level;
-    const content = `think:${label}`;
+    const content = `thinking:${label}`;
 
     if (level === "high" || level === "xhigh" || level === "max") {
       return { content: rainbow(content), visible: true };
@@ -345,12 +355,10 @@ const contextPctSegment: StatusLineSegment = {
     const percentOnly = ctx.options.context?.format === "percent";
     const hasKnownUsage = contextTokens !== null && contextPercent !== null;
     const approximate = ctx.contextApproximate ? "~" : "";
-    // "full" (default): tokens/window + one-decimal percentage + auto-compact icon.
-    // "percent": bare rounded percentage, threshold-colored, no icons.
     const text = percentOnly
       ? (hasKnownUsage ? `${approximate}${Math.round(contextPercent)}%` : "?")
       : hasKnownUsage
-        ? `${approximate}${formatTokens(contextTokens)}/${formatTokens(contextWindow)} (${contextPercent.toFixed(1)}%)${autoIcon}`
+        ? `${approximate}${contextPercent.toFixed(1)}%/${formatTokens(contextWindow)}${autoIcon}`
         : `?/${formatTokens(contextWindow)}${autoIcon}`;
 
     // Icon outside color, text inside - use semantic colors for thresholds
@@ -509,6 +517,7 @@ const extensionStatusesSegment: StatusLineSegment = {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const SEGMENTS: Record<BuiltinStatusLineSegmentId, StatusLineSegment> = {
+  pi: piSegment,
   model: modelSegment,
   shell_mode: shellModeSegment,
   path: pathSegment,

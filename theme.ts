@@ -21,6 +21,7 @@ export interface PowerlineThemeConfig {
 
 // Default color scheme (uses pi theme colors)
 const DEFAULT_COLORS: Required<ColorScheme> = {
+  pi: "#febc38",
   model: "#d787af",  // Pink/mauve (matching original colors.ts)
   shellMode: "accent",
   path: "#00afaf",  // Teal/cyan (matching original colors.ts)

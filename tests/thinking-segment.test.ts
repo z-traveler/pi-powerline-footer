@@ -57,10 +57,10 @@ test("thinking segment uses per-level colors for off through medium", () => {
   const low = renderSegment("thinking", createSegmentContext("low", colors));
   const medium = renderSegment("thinking", createSegmentContext("medium", colors));
 
-  assert.equal(off.content, `${hexAnsi("#111111")}think:off\x1b[0m`);
-  assert.equal(minimal.content, `${hexAnsi("#222222")}think:min\x1b[0m`);
-  assert.equal(low.content, `${hexAnsi("#333333")}think:low\x1b[0m`);
-  assert.equal(medium.content, `${hexAnsi("#444444")}think:med\x1b[0m`);
+  assert.equal(off.content, `${hexAnsi("#111111")}thinking:off\x1b[0m`);
+  assert.equal(minimal.content, `${hexAnsi("#222222")}thinking:min\x1b[0m`);
+  assert.equal(low.content, `${hexAnsi("#333333")}thinking:low\x1b[0m`);
+  assert.equal(medium.content, `${hexAnsi("#444444")}thinking:med\x1b[0m`);
 });
 
 test("thinking segment uses rainbow styling for high through max", () => {
@@ -69,7 +69,7 @@ test("thinking segment uses rainbow styling for high through max", () => {
   for (const level of ["high", "xhigh", "max"]) {
     const rendered = renderSegment("thinking", createSegmentContext(level, colors));
     assert.deepEqual(rendered, {
-      content: rainbow(`think:${level}`),
+      content: rainbow(`thinking:${level}`),
       visible: true,
     });
   }
