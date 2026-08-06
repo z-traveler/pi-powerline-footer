@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.12.1-z1] - 2026-08-06
+
+### Changed
+- **Rounded editor chrome** — Restored the powerline-in-top-border input frame shown in the pi-subagents demo while retaining the 0.12.1 implementation and fixes.
+
 ## [0.12.1] - 2026-08-04
 
 ### Fixed

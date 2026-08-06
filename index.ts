@@ -1296,20 +1296,6 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     return item;
   }
 
-  function isSigilIdeaDraft(text: string): boolean {
-    const sigil = config.queue.captureSigil;
-    if (sigil === false) return false;
-    const normalizedSigil = sigil.trim();
-    if (!normalizedSigil) return false;
-    const trimmed = text.trimStart();
-    return trimmed.startsWith(normalizedSigil) && /^\s/.test(trimmed.slice(normalizedSigil.length));
-  }
-
-  function captureSigilGlyph(): string {
-    const sigil = config.queue.captureSigil === false ? "#" : config.queue.captureSigil;
-    return Array.from(sigil)[0] ?? "#";
-  }
-
   function capturePostCompactPrompt(ctx: any, text: string): PowerlineQueueItem | null {
     const trimmed = text.trim();
     if (!trimmed) return null;
@@ -2758,7 +2744,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       },
     }), { placement: "aboveEditor" });
 
-    ctx.ui.setWidget("powerline-top", (_tui: any, theme: Theme) => ({
+    ctx.ui.setWidget("powerline-top", config.placement === "below" ? (_tui: any, theme: Theme) => ({
       dispose() {},
       invalidate() {
         resetLayoutCache();
@@ -2766,7 +2752,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       render(width: number): string[] {
         return renderPowerlinePrimaryLines(width, theme);
       },
-    }), { placement: config.placement === "below" ? "belowEditor" : "aboveEditor" });
+    }) : undefined, { placement: "belowEditor" });
 
     ctx.ui.setWidget("powerline-secondary", (_tui: any, theme: Theme) => ({
       dispose() {},
@@ -3011,14 +2997,13 @@ export default function powerlineFooter(pi: ExtensionAPI) {
           return originalRender(width);
         }
 
-        const bc = (s: string) => `${getFgAnsiCode("sep")}${s}${ansi.reset}`;
-        const captureDraft = !bashModeActive && isSigilIdeaDraft(editor.getExpandedText());
-        const promptGlyph = bashModeActive ? "$" : captureDraft ? captureSigilGlyph() : ">";
-        const promptColor = captureDraft ? getFgAnsiCode("queue") : ansi.getFgAnsi(200, 200, 200);
-        const prompt = `${promptColor}${promptGlyph}${ansi.reset}`;
-        const promptPrefix = ` ${prompt} `;
-        const contPrefix = "   ";
-        const contentWidth = Math.max(1, width - 3);
+        const bc = (s: string) => ctx.ui.theme.fg("borderAccent", s);
+        const topLeft = bc("╭─");
+        const topRight = bc("─╮");
+        const bottomLeft = bc("╰─");
+        const bottomRight = bc("─╯");
+        const vertical = bc("│");
+        const contentWidth = Math.max(1, width - 6);
         const lines = originalRender(contentWidth);
 
         if (lines.length === 0) return lines;
@@ -3033,18 +3018,25 @@ export default function powerlineFooter(pi: ExtensionAPI) {
         }
 
         const result: string[] = [];
-        result.push(" " + bc("─".repeat(width - 2)));
+        const statusContent = renderPowerlinePrimaryLines(width - 4, ctx.ui.theme)[0] ?? "";
+        const statusWidth = visibleWidth(statusContent);
+        const topFillWidth = width - 4;
+        const fillWidth = Math.max(0, topFillWidth - statusWidth);
+        result.push(topLeft + statusContent + bc("─".repeat(fillWidth)) + topRight);
 
         for (let i = 1; i < bottomBorderIndex; i++) {
-          const prefix = i === 1 ? promptPrefix : contPrefix;
-          result.push(`${prefix}${lines[i] || ""}`);
+          const line = lines[i] || "";
+          const lineWidth = visibleWidth(line);
+          const padding = " ".repeat(Math.max(0, contentWidth - lineWidth));
+          const isLastContent = i === bottomBorderIndex - 1;
+          result.push(isLastContent
+            ? `${bottomLeft} ${line}${padding} ${bottomRight}`
+            : `${vertical}  ${line}${padding}  ${vertical}`);
         }
 
         if (bottomBorderIndex === 1) {
-          result.push(`${promptPrefix}${" ".repeat(contentWidth)}`);
+          result.push(`${bottomLeft} ${" ".repeat(contentWidth)} ${bottomRight}`);
         }
-
-        result.push(" " + bc("─".repeat(width - 2)));
 
         for (let i = bottomBorderIndex + 1; i < lines.length; i++) {
           result.push(lines[i] || "");
