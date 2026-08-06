@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-type Editor = { getText(): string; handleInput(data: string): void; onSubmit?: (text: string) => void };
+type Editor = { getText(): string; handleInput(data: string): void; render(width: number): string[]; onSubmit?: (text: string) => void };
 
 async function editorHarness(t: test.TestContext, powerline: Record<string, unknown>) {
   const root = mkdtempSync(join(tmpdir(), "powerline-send-delay-"));
@@ -19,10 +19,11 @@ async function editorHarness(t: test.TestContext, powerline: Record<string, unkn
     cwd: root, hasUI: true, model: { name: "Test model", provider: "test" }, modelRegistry: {},
     sessionManager: { getBranch: () => [], getSessionId: () => "send-delay-test", getCwd: () => root },
     ui: {
+      theme: { fg: (_color: string, text: string) => text },
       getEditorText: () => editor.getText(),
       setEditorComponent(factory?: (tui: object, theme: object, keys: object) => Editor) {
         if (!factory) return;
-        editor = factory({ requestRender() {}, terminal: { columns: 80, rows: 24 } }, {}, KeybindingsManager.create());
+        editor = factory({ requestRender() {}, terminal: { columns: 80, rows: 24 } }, { borderColor: (text: string) => text }, KeybindingsManager.create());
         // Pi wires its submit handler onto the extension editor after the factory returns.
         editor.onSubmit = (text) => { sent.push(text); };
       },
@@ -51,6 +52,8 @@ async function editorHarness(t: test.TestContext, powerline: Record<string, unkn
     sent,
     text: () => editor.getText(),
     embedsWorkingStatus: () => Reflect.get(editor, "embedWorkingStatus"),
+    render: (width: number) => editor.render(width),
+    setWorkingStatus: (status: object | null) => Reflect.set(editor, "workingStatusIndicator", status),
     type: (text: string) => { for (const char of text) editor.handleInput(char); },
     enter: () => editor.handleInput("\r"),
     escape: () => editor.handleInput("\x1b"),
@@ -122,3 +125,22 @@ for (const [workingIndicatorPlacement, embedded] of [
     assert.equal(h.embedsWorkingStatus(), embedded);
   });
 }
+
+
+test("rounded editor preserves Pi status above the powerline only when present", async (t) => {
+  const h = await editorHarness(t, {});
+  const withoutStatus = h.render(40);
+  assert.ok(withoutStatus[0]?.startsWith("╭"));
+
+  h.setWorkingStatus({
+    renderInBorder: () => "⠋ Working",
+    renderSpinnerInBorder: () => "⠋",
+  });
+  const withStatus = h.render(40);
+  assert.match(withStatus[0]!, /Working/);
+  assert.equal(withStatus[0]!.length, 39);
+  assert.deepEqual(withStatus.slice(1), withoutStatus);
+
+  h.setWorkingStatus(null);
+  assert.deepEqual(h.render(40), withoutStatus);
+});

@@ -257,7 +257,7 @@ test("responsive secondary content is owned exclusively by the footer", async ()
     assert.equal(widePrimary.match(/review.*ready/g)?.length, 1);
 
     await fake.commands.get("powerline")!.handler("placement above", runtime.ctx);
-    assert.equal(runtime.widgetPlacements.get("powerline-top"), "aboveEditor");
+    assert.equal(runtime.widgets.has("powerline-top"), false, "above placement uses the rounded editor border");
     assert.equal(runtime.widgets.has("powerline-secondary"), false);
     assert.match(runtime.footer!.render(16).join("\n"), /review.*ready/);
 
@@ -326,7 +326,7 @@ test("outer padding applies to responsive primary and wrapped rows with ANSI and
     const statuses = new Map([["a", "\x1b[31m界é\x1b[0m"], ["b", "bbb"], ["c", "ccc"]]);
     writeFileSync(join(root, "settings.json"), JSON.stringify({
       powerline: {
-        welcome: false, padding, secondaryOverflow: "wrap", separator: "pipe",
+        welcome: false, placement: "below", padding, secondaryOverflow: "wrap", separator: "pipe",
         layout: { left: ["custom:a"], right: ["custom:b"], secondary: ["custom:c"] },
         customItems: [...statuses.keys()].map((id) => ({ id, selfColorize: true })),
       },
@@ -453,7 +453,7 @@ test("Git rendering reuses the cwd-owned provider only on demand and refreshes a
     runtime?.disposeFooter();
     // Mirror Pi's applyRuntimeSettings -> bindExtensions -> session_start ordering.
     providerCwd = cwd;
-    writeFileSync(join(root, "settings.json"), JSON.stringify({ powerline: { welcome: false, layout, ...powerline } }));
+    writeFileSync(join(root, "settings.json"), JSON.stringify({ powerline: { welcome: false, placement: "below", layout, ...powerline } }));
     runtime = createCtx({ cwd, footerData, theme: { ...fakeTheme(), fg: (color, text) => `<${color}>${text}</${color}>` } });
     await fake.handlers.get("session_start")?.({ reason: "resume" }, runtime.ctx);
     calls.length = 0;
@@ -523,7 +523,7 @@ test("footer queue demand follows resolved layout while preview and picker stay 
     { layout: { left: [], right: [], secondary: ["queue"] } },
   ]) {
     const root = mkdtempSync(join(tmpdir(), "powerline-queue-display-"));
-    writeFileSync(join(root, "settings.json"), JSON.stringify({ powerline: { welcome: false, ...powerline } }));
+    writeFileSync(join(root, "settings.json"), JSON.stringify({ powerline: { welcome: false, placement: "below", ...powerline } }));
     const inbox = join(root, "powerline-footer", "inbox.jsonl");
     const store = new PowerlineQueueStore(inbox, join(root, "projects.json"));
     store.add({ text: "independent preview", source: { cwd: root }, target: { kind: "global" }, intent: "follow-up" });
