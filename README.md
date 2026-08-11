@@ -197,7 +197,7 @@ Use `powerline.layout` to override segment order and grouping while keeping the 
 
 A present `left`, `right`, or `secondary` array replaces that preset group exactly; an empty array clears it. Omitted groups keep the preset entries and automatically append custom items by their configured `position`. Explicitly listing a segment moves it out of omitted preset groups, and explicitly placed custom items are not auto-appended elsewhere. `disabledSegments` is applied after layout. `separator` accepts any style listed below; omit it to keep the preset’s separator.
 
-Responsive behavior is unchanged: these groups control ordering and overflow priority, not permanently pinned terminal rows. `right` means “later primary segments,” not right-edge alignment. On wide terminals secondary entries can fit in the top bar; on narrow terminals primary overflow moves into the secondary line. Some segments are hidden when they have no value, so `thinking` appears only when the active session/model reports a non-`off` thinking level. Unknown entries are ignored with a startup warning. The old fixed `custom` preset has been removed; combine any preset with `layout` instead.
+`right` segments are pinned to the terminal's right edge. They reserve their rendered width first; left and secondary segments use the remaining space and overflow to the secondary line when needed. Some segments are hidden when they have no value, so `thinking` appears only when the active session/model reports a non-`off` thinking level. Unknown entries are ignored with a startup warning. The old fixed `custom` preset has been removed; combine any preset with `layout` instead.
 
 ### Demo settings
 
@@ -485,7 +485,9 @@ The origin remote is detected (SSH or HTTPS) and mapped to an icon: GitHub (), G
 
 ## Segments
 
-`pi` · `model` · `thinking` · `shell_mode` · `path` · `git` · `subagents` · `token_in` · `token_out` · `token_total` · `cost` · `context_pct` · `context_total` · `time_spent` · `time` · `session` · `hostname` · `cache_read` · `cache_write` · `extension_statuses`
+`pi` · `model` · `thinking` · `shell_mode` · `path` · `git` · `subagents` · `token_in` · `token_out` · `token_total` · `cost` · `context_pct` · `context_total` · `time_spent` · `time` · `session` · `agent` · `hostname` · `cache_read` · `cache_write` · `extension_statuses`
+
+The `agent` segment shows the main agent selected by pi-subagents' `--agent` flag and stays hidden for ordinary sessions.
 
 ## Separators
 
