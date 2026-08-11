@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.12.1-z3] - 2026-08-11
+
+### Added
+- **Named main-agent segment** — Added an `agent` segment that reads the active pi-subagents `--agent` selection from session metadata.
+
+### Changed
+- **Physical right alignment** — `layout.right` segments now reserve space and render flush against the terminal's right edge.
+
 ## [0.12.1-z2] - 2026-08-06
 
 ### Changed

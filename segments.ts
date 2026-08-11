@@ -22,6 +22,18 @@ function withIcon(icon: string, text: string): string {
   return icon ? `${icon} ${text}` : text;
 }
 
+export function findMainAgentName(entries: readonly unknown[]): string | undefined {
+  for (let index = entries.length - 1; index >= 0; index--) {
+    const entry = entries[index];
+    if (typeof entry !== "object" || entry === null) continue;
+    const candidate = entry as { type?: unknown; customType?: unknown; data?: { name?: unknown } };
+    if (candidate.type !== "custom" || candidate.customType !== "pi-subagents:main-agent") continue;
+    const name = candidate.data?.name;
+    if (typeof name === "string" && name.trim()) return name.trim();
+  }
+  return undefined;
+}
+
 function formatTokens(n: number): string {
   if (n < 1000) return n.toString();
   if (n < 10000) return `${(n / 1000).toFixed(1)}k`;
@@ -439,6 +451,14 @@ const sessionSegment: StatusLineSegment = {
   },
 };
 
+const agentSegment: StatusLineSegment = {
+  id: "agent",
+  render(ctx) {
+    if (!ctx.agentName) return { content: "", visible: false };
+    return { content: color(ctx, "pi", withIcon(getIcons().agents, ctx.agentName)), visible: true };
+  },
+};
+
 const hostnameSegment: StatusLineSegment = {
   id: "hostname",
   render() {
@@ -533,6 +553,7 @@ export const SEGMENTS: Record<BuiltinStatusLineSegmentId, StatusLineSegment> = {
   time_spent: timeSpentSegment,
   time: timeSegment,
   session: sessionSegment,
+  agent: agentSegment,
   hostname: hostnameSegment,
   cache_read: cacheReadSegment,
   cache_write: cacheWriteSegment,

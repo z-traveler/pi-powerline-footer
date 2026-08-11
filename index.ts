@@ -27,7 +27,7 @@ import { getPreset, PRESETS } from "./presets.ts";
 import { getAgentPath } from "./paths.ts";
 import { collectHiddenExtensionStatusKeys, getNotificationExtensionStatuses, mergeSegmentOptions, mergeSegmentsWithCustomItems, nextPowerlineSettingWithOptions, nextPowerlineSettingWithPreset, parsePowerlineConfig } from "./powerline-config.ts";
 import { getSeparator } from "./separators.ts";
-import { renderSegment } from "./segments.ts";
+import { findMainAgentName, renderSegment } from "./segments.ts";
 import { getGitStatus, invalidateGitStatus, invalidateGitBranch, subscribeGitUpdates } from "./git-status.ts";
 import { SessionBranchCache, SessionTokenStatsCache } from "./token-stats.ts";
 import { ansi, getFgAnsiCode } from "./colors.ts";
@@ -868,12 +868,18 @@ function buildContentFromParts(
   return " " + parts.join(` ${sepAnsi}${sep}${ansi.reset} `) + ansi.reset + " ";
 }
 
+export function alignPowerlineContent(left: string, right: string, width: number): string {
+  if (!right) return left;
+  const padding = Math.max(0, width - visibleWidth(left) - visibleWidth(right));
+  return `${left}${" ".repeat(padding)}${right}`;
+}
+
 /**
  * Responsive segment layout - fits segments into top bar, overflows to secondary row.
  * When terminal is wide enough, secondary segments move up to top bar.
  * When narrow, top bar segments overflow down to secondary row.
  */
-function computeResponsiveLayout(
+export function computeResponsiveLayout(
   ctx: SegmentContext,
   presetDef: ReturnType<typeof getPreset>,
   availableWidth: number
@@ -887,61 +893,41 @@ function computeResponsiveLayout(
     layout: config.layout,
     disabledSegments: config.disabledSegments,
   });
-  const primaryIds = [...mergedSegments.leftSegments, ...mergedSegments.rightSegments];
-  const secondaryIds = mergedSegments.secondarySegments;
-  const allSegmentIds = [...primaryIds, ...secondaryIds];
+  const renderIds = (ids: readonly StatusLineSegmentId[]) => ids
+    .map((id) => renderSegmentWithWidth(id, ctx))
+    .filter((segment) => segment.visible);
+  const fit = (segments: Array<{ content: string; width: number }>, width: number) => {
+    const fitted: string[] = [];
+    let currentWidth = 2;
+    let overflowAt = segments.length;
 
-  // Render all segments and get their widths
-  const renderedSegments: { content: string; width: number }[] = [];
-  for (const segId of allSegmentIds) {
-    const { content, width, visible } = renderSegmentWithWidth(segId, ctx);
-    if (visible) {
-      renderedSegments.push({ content, width });
-    }
-  }
-
-  if (renderedSegments.length === 0) {
-    return { topContent: "", secondaryContent: "" };
-  }
-
-  // Calculate how many segments fit in top bar
-  // Account for: leading space (1) + trailing space (1) = 2 chars overhead
-  const baseOverhead = 2;
-  let currentWidth = baseOverhead;
-  let topSegments: string[] = [];
-  let overflowSegments: { content: string; width: number }[] = [];
-  let overflow = false;
-
-  for (const seg of renderedSegments) {
-    const neededWidth = seg.width + (topSegments.length > 0 ? sepWidth : 0);
-
-    if (!overflow && currentWidth + neededWidth <= availableWidth) {
-      topSegments.push(seg.content);
+    for (let index = 0; index < segments.length; index++) {
+      const segment = segments[index];
+      const neededWidth = segment.width + (fitted.length > 0 ? sepWidth : 0);
+      if (currentWidth + neededWidth > width) {
+        overflowAt = index;
+        break;
+      }
+      fitted.push(segment.content);
       currentWidth += neededWidth;
-    } else {
-      overflow = true;
-      overflowSegments.push(seg);
     }
-  }
 
-  // Fit overflow segments into secondary row (same width constraint)
-  // Stop at first non-fitting segment to preserve ordering
-  let secondaryWidth = baseOverhead;
-  let secondarySegments: string[] = [];
+    return { fitted, overflow: segments.slice(overflowAt) };
+  };
 
-  for (const seg of overflowSegments) {
-    const neededWidth = seg.width + (secondarySegments.length > 0 ? sepWidth : 0);
-    if (secondaryWidth + neededWidth <= availableWidth) {
-      secondarySegments.push(seg.content);
-      secondaryWidth += neededWidth;
-    } else {
-      break;
-    }
-  }
+  const right = fit(renderIds(mergedSegments.rightSegments), availableWidth);
+  const rightContent = buildContentFromParts(right.fitted, separatorStyle);
+  const leftAndSecondary = [
+    ...renderIds(mergedSegments.leftSegments),
+    ...renderIds(mergedSegments.secondarySegments),
+  ];
+  const left = fit(leftAndSecondary, availableWidth - visibleWidth(rightContent));
+  const leftContent = buildContentFromParts(left.fitted, separatorStyle);
+  const secondary = fit([...left.overflow, ...right.overflow], availableWidth);
 
   return {
-    topContent: buildContentFromParts(topSegments, separatorStyle),
-    secondaryContent: buildContentFromParts(secondarySegments, separatorStyle),
+    topContent: alignPowerlineContent(leftContent, rightContent, availableWidth),
+    secondaryContent: buildContentFromParts(secondary.fitted, separatorStyle),
   };
 }
 
@@ -2567,6 +2553,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       model: ctx.model,
       thinkingLevel,
       sessionId: ctx.sessionManager?.getSessionId?.(),
+      agentName: findMainAgentName(ctx.sessionManager?.getEntries?.() ?? []),
       cwd: ctx.cwd,
       usageStats: { input, output, cacheRead, cacheWrite, cost, subagentCost },
       contextTokens,

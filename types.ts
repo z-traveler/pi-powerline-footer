@@ -47,6 +47,7 @@ export const BUILTIN_STATUS_LINE_SEGMENT_IDS = [
   "time_spent",
   "time",
   "session",
+  "agent",
   "hostname",
   "cache_read",
   "cache_write",
@@ -190,6 +191,7 @@ export interface SegmentContext {
   } | undefined;
   thinkingLevel: string;
   sessionId: string | undefined;
+  agentName: string | undefined;
   cwd?: string;
   
   // Computed
