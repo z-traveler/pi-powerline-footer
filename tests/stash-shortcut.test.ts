@@ -327,7 +327,7 @@ test("outer padding applies to responsive primary and wrapped rows with ANSI and
     writeFileSync(join(root, "settings.json"), JSON.stringify({
       powerline: {
         welcome: false, placement: "below", padding, secondaryOverflow: "wrap", separator: "pipe",
-        layout: { left: ["custom:a"], right: ["custom:b"], secondary: ["custom:c"] },
+        layout: { left: ["custom:a"], right: [], secondary: ["custom:b", "custom:c"] },
         customItems: [...statuses.keys()].map((id) => ({ id, selfColorize: true })),
       },
     }));

@@ -27,7 +27,7 @@ import { getPreset, PRESETS } from "./presets.ts";
 import { getAgentPath } from "./paths.ts";
 import { collectHiddenExtensionStatusKeys, getNotificationExtensionStatuses, mergeSegmentOptions, mergeSegmentsWithCustomItems, nextPowerlineSettingWithOptions, nextPowerlineSettingWithPreset, parsePowerlineConfig } from "./powerline-config.ts";
 import { getSeparator } from "./separators.ts";
-import { renderSegment } from "./segments.ts";
+import { findMainAgentName, renderSegment } from "./segments.ts";
 import { resolveThinkingLevelSelection } from "./thinking-level.ts";
 import { getGitStatus, invalidateGitStatus, invalidateGitBranch, subscribeGitUpdates } from "./git-status.ts";
 import { SessionUsageCache } from "./token-stats.ts";
@@ -1113,6 +1113,12 @@ function buildContentFromParts(
   return padding + parts.join(` ${sepAnsi}${sep}${ansi.reset} `) + ansi.reset + padding;
 }
 
+export function alignPowerlineContent(left: string, right: string, width: number): string {
+  if (!right) return left;
+  const padding = Math.max(0, width - visibleWidth(left) - visibleWidth(right));
+  return `${left}${" ".repeat(padding)}${right}`;
+}
+
 type ResponsiveLayout = { topContent: string; secondaryLines: string[] };
 
 /**
@@ -1121,7 +1127,7 @@ type ResponsiveLayout = { topContent: string; secondaryLines: string[] };
  * When narrow, top bar segments overflow down to secondary row.
  * With `secondaryOverflow: "wrap"`, secondary overflow continues on additional rows.
  */
-function computeResponsiveLayout(
+export function computeResponsiveLayout(
   ctx: SegmentContext,
   presetDef: ReturnType<typeof getPreset>,
   allSegmentIds: StatusLineSegmentId[],
@@ -1131,16 +1137,38 @@ function computeResponsiveLayout(
   const separatorDef = getSeparator(separatorStyle);
   const sepWidth = visibleWidth(separatorDef.left) + 2; // separator + spaces around it
 
+  const merged = mergeSegmentsWithCustomItems(presetDef, config.customItems, {
+    layout: config.layout, disabledSegments: config.disabledSegments,
+  });
+  const rightIds = new Set<StatusLineSegmentId>(merged.rightSegments);
+  const rightSegments = [...rightIds].map((id) => renderSegmentWithWidth(id, ctx)).filter((segment) => segment.visible);
+  const rightFitted: string[] = [];
+  const rightOverflow: { content: string; width: number }[] = [];
+  let rightWidth = 2 * config.padding;
+  let rightFull = false;
+  for (const segment of rightSegments) {
+    const needed = segment.width + (rightFitted.length ? sepWidth : 0);
+    if (!rightFull && rightWidth + needed <= availableWidth) {
+      rightFitted.push(segment.content);
+      rightWidth += needed;
+    } else {
+      rightFull = true;
+      rightOverflow.push(segment);
+    }
+  }
+  const rightContent = buildContentFromParts(rightFitted, separatorStyle);
+
   // Render all segments and get their widths
   const renderedSegments: { content: string; width: number }[] = [];
   for (const segId of allSegmentIds) {
+    if (rightIds.has(segId)) continue;
     const { content, width, visible } = renderSegmentWithWidth(segId, ctx);
     if (visible) {
       renderedSegments.push({ content, width });
     }
   }
 
-  if (renderedSegments.length === 0) {
+  if (renderedSegments.length === 0 && !rightContent && rightOverflow.length === 0) {
     return { topContent: "", secondaryLines: [] };
   }
 
@@ -1155,7 +1183,7 @@ function computeResponsiveLayout(
   for (const seg of renderedSegments) {
     const neededWidth = seg.width + (topSegments.length > 0 ? sepWidth : 0);
 
-    if (!overflow && currentWidth + neededWidth <= availableWidth) {
+    if (!overflow && currentWidth + neededWidth <= availableWidth - visibleWidth(rightContent)) {
       topSegments.push(seg.content);
       currentWidth += neededWidth;
     } else {
@@ -1163,6 +1191,8 @@ function computeResponsiveLayout(
       overflowSegments.push(seg);
     }
   }
+
+  overflowSegments.push(...rightOverflow);
 
   // Fit overflow segments into secondary rows (same width constraint).
   // Drop mode stops at the first non-fitting segment to preserve ordering.
@@ -1187,7 +1217,7 @@ function computeResponsiveLayout(
   }
 
   return {
-    topContent: buildContentFromParts(topSegments, separatorStyle),
+    topContent: alignPowerlineContent(buildContentFromParts(topSegments, separatorStyle), rightContent, availableWidth),
     secondaryLines: secondaryRows
       .filter((row) => row.length > 0)
       .map((row) => buildContentFromParts(row, separatorStyle)),
@@ -2961,6 +2991,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       thinkingLevel,
       sessionId: ctx.sessionManager?.getSessionId?.(),
       sessionName: ctx.sessionManager?.getSessionName?.(),
+      agentName: findMainAgentName(ctx.sessionManager?.getEntries?.() ?? []),
       cwd: ctx.cwd,
       usageStats: { input, output, cacheRead, cacheWrite, cost, subagentCost },
       contextTokens,
