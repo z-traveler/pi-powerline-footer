@@ -279,9 +279,6 @@ const queueSegment: StatusLineSegment = {
       parts.push(`q ${summary.queueCount}`);
     }
 
-    if (summary.ideaCount > 0) {
-      parts.push(`ideas ${summary.ideaCount}`);
-    }
 
     if (summary.blockedCount > 0) {
       parts.push(`blocked ${summary.blockedCount}`);
@@ -364,21 +361,25 @@ const contextPctSegment: StatusLineSegment = {
     if (ctx.customCompactionEnabled) return { content: "", visible: false };
 
     const icons = getIcons();
-    const { contextPercent, contextWindow } = ctx;
+    const { contextTokens, contextPercent, contextWindow } = ctx;
 
     const autoIcon = ctx.autoCompactEnabled && icons.auto ? ` ${icons.auto}` : "";
     const percentOnly = ctx.options.context?.format === "percent";
+    const hasKnownUsage = contextTokens !== null && contextPercent !== null;
+    const approximate = ctx.contextApproximate ? "~" : "";
     const text = percentOnly
-      ? `${Math.round(contextPercent)}%`
-      : `${contextPercent.toFixed(1)}%/${formatTokens(contextWindow)}${autoIcon}`;
+      ? (hasKnownUsage ? `${approximate}${Math.round(contextPercent)}%` : "?")
+      : hasKnownUsage
+        ? `${approximate}${contextPercent.toFixed(1)}%/${formatTokens(contextWindow)}${autoIcon}`
+        : `?/${formatTokens(contextWindow)}${autoIcon}`;
 
     // Icon outside color, text inside - use semantic colors for thresholds
     let content: string;
     const colored = (semantic: "context" | "contextWarn" | "contextError") =>
       percentOnly ? color(ctx, semantic, text) : withIcon(icons.context, color(ctx, semantic, text));
-    if (contextPercent > 90) {
+    if (hasKnownUsage && contextPercent > 90) {
       content = colored("contextError");
-    } else if (contextPercent > 70) {
+    } else if (hasKnownUsage && contextPercent > 70) {
       content = colored("contextWarn");
     } else {
       content = colored("context");

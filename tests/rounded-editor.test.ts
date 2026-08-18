@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { renderRoundedPowerlineEditorLines } from "../index.ts";
+import { visibleWidth } from "@earendil-works/pi-tui";
+import { renderFastPowerlineEditor, renderRoundedPowerlineEditorLines } from "../index.ts";
 
 const identityBorder = (text: string) => text;
 
@@ -31,4 +32,27 @@ test("rounded editor preserves trailing auxiliary lines after the upstream borde
     "╰─ draft          ─╯",
     "completion",
   ]);
+});
+
+test("large drafts keep fast rendering and rounded overflow markers", () => {
+  const editor = {
+    state: {
+      lines: Array.from({ length: 81 }, (_, index) => `draft ${index}`),
+      cursorLine: 80,
+      cursorCol: 8,
+    },
+    tui: { terminal: { rows: 24 } },
+    focused: true,
+    isShowingAutocomplete: () => false,
+  };
+  const fastLines = renderFastPowerlineEditor(editor, 34, {
+    bashModeActive: false,
+    completionsEnabled: false,
+  });
+
+  assert.ok(fastLines);
+  const rendered = renderRoundedPowerlineEditorLines(fastLines, " PI ", 40, identityBorder);
+  assert.equal(rendered[0]?.startsWith("╭↑ PI "), true);
+  assert.equal(rendered.at(-1)?.startsWith("╰─"), true);
+  assert.equal(rendered.every((line) => visibleWidth(line) === 40), true);
 });

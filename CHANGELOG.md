@@ -2,6 +2,58 @@
 
 ## [Unreleased]
 
+## [0.15.0-z1] - 2026-08-18
+
+### Changed
+- **Upstream 0.15 baseline** — Integrated the latest upstream stable release while preserving the rounded editor chrome, demo status format, named main-agent segment, and physical right-edge alignment.
+
+## [0.15.0] - 2026-08-15
+
+### Added
+- **Working vibe colors** — Added `powerline.workingVibes.color` so vibe text can use Pi theme colors, hex colors, or `rainbow`. Thanks to [@jummyliu](https://github.com/jummyliu) for #170.
+
+### Changed
+- **Pi 0.84 compatibility** — Widened Pi package peer dependency ranges to `>=0.81.0 <0.85.0` and refreshed dev dependencies against `@earendil-works/*` 0.84.1, so `pi-powerline-footer` installs cleanly with Pi 0.84.x packages. Thanks to [@brunoessmann](https://github.com/brunoessmann) for #168.
+
+### Fixed
+- **Post-compaction queue delivery** — Mark queued prompts as sent only after Pi starts them, and requeue them if startup does not happen.
+
+## [0.14.1] - 2026-08-13
+
+### Fixed
+- **Welcome keypress passthrough** — First input now dismisses the startup welcome UI immediately and forwards that key to the editor so typing starts without an extra keystroke. Closes #166.
+
+## [0.14.0] - 2026-08-12
+
+### Changed
+- **Editor cursor responsiveness** — Avoid full visual remaps or grapheme scans for safe plain-ASCII cursor movement and forward delete on long single-line drafts.
+
+## [0.13.0] - 2026-08-12
+
+### Changed
+- **Editor typing responsiveness** — Avoid expanding paste markers or joining full drafts in editor hot paths, debounce bash ghost completion, run git completion lookups asynchronously, cache queue/prompt render work, use a bounded fast render path for large editor drafts, and avoid full grapheme scans when deleting plain ASCII from long lines. Opt-in profiling and render A/B flags now identify remaining editor costs without affecting normal sessions.
+- **Editor hot-path cleanup** — Simplified type narrowing in the fast Backspace path without changing behavior.
+- **Bash completions are opt-in** — Disable Powerline bash ghost suggestions and one-off `!command` predictions by default. Set `bashMode.completions` to `true` to re-enable them.
+- **GitHub Actions runtime** — Updated checkout and Node setup actions to their Node 24 runtime versions.
+
+### Fixed
+- **Git polling no longer takes `.git/index.lock`** — Read-only git commands now run with `GIT_OPTIONAL_LOCKS=0`, so polling `git status` stops refreshing the index as a side effect, which raced interactive git in the same repo and could leave an orphaned lock behind. Thanks to Max Kaye (@XertroV) for #156.
+
+### Removed
+- **Saved idea inbox** — Removed unused idea capture commands, sigil capture, and issue handoff. The queue now manages queued prompts only.
+
+## [0.12.3] - 2026-08-09
+
+### Fixed
+- **Post-compaction context display** — Show a clearly marked estimate from the active compacted context after compaction or `/reload`, instead of stale pre-compaction usage or an unknown placeholder.
+
+## [0.12.2] - 2026-08-08
+
+### Fixed
+- **Fullscreen footer height** — Return one blank footer line so the Powerline footer matches Pi fullscreen dock sizing at startup. Thanks to @acidnik for #144.
+- **Global shell history fallback** — Cache unreadable global history files as empty until their fingerprint changes, so bash mode keeps working without logging a stack on every keypress. Thanks to @RomainMuller for #143.
+- **Post-compaction queue delivery** — Snapshot the queue context before delayed delivery so a reload or session replacement cannot crash by reading a stale extension context. Thanks to @pascalandy for the report in nicobailon/pi-subagents#897.
+
 ## [0.12.1-z3] - 2026-08-11
 
 ### Added

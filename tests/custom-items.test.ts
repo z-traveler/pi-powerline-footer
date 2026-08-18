@@ -35,7 +35,6 @@ test("parsePowerlineConfig supports object config with custom items", () => {
   assert.equal(config.invalidPlacement, null);
   assert.equal(config.welcome, true);
   assert.equal(config.stashSharpSShortcut, false);
-  assert.deepEqual(config.queue, { captureSigil: "#" });
 });
 
 test("parsePowerlineConfig supports disabled segments", () => {
@@ -156,31 +155,18 @@ test("parsePowerlineConfig validates primary powerline placement", () => {
 
 
 
-test("parsePowerlineConfig supports welcome, legacy sharp-S, and queue capture settings", () => {
-  const disabled = parsePowerlineConfig(
-    { preset: "compact", welcome: false, stashSharpSShortcut: true, queue: { captureSigil: false } },
-    ["default", "compact"],
-  );
-  const customSigil = parsePowerlineConfig(
-    { preset: "compact", queue: { captureSigil: "//" } },
-    ["default", "compact"],
-  );
-  const invalidSigil = parsePowerlineConfig(
-    { preset: "compact", queue: { captureSigil: "# note" } },
+test("parsePowerlineConfig supports welcome and legacy sharp-S settings", () => {
+  const config = parsePowerlineConfig(
+    { preset: "compact", welcome: false, stashSharpSShortcut: true },
     ["default", "compact"],
   );
   const shorthand = parsePowerlineConfig("compact", ["default", "compact"]);
 
-  assert.equal(disabled.welcome, false);
-  assert.equal(disabled.stashSharpSShortcut, true);
-  assert.deepEqual(disabled.queue, { captureSigil: false });
-  assert.deepEqual(customSigil.queue, { captureSigil: "//" });
-  assert.deepEqual(invalidSigil.queue, { captureSigil: "#" });
+  assert.equal(config.welcome, false);
+  assert.equal(config.stashSharpSShortcut, true);
   assert.equal(shorthand.welcome, true);
   assert.equal(shorthand.stashSharpSShortcut, false);
-  assert.deepEqual(shorthand.queue, { captureSigil: "#" });
 });
-
 test("parsePowerlineConfig extracts supported segment options", () => {
   const config = parsePowerlineConfig(
     {
@@ -190,6 +176,7 @@ test("parsePowerlineConfig extracts supported segment options", () => {
       git: { showBranch: false, showStaged: false, showUnstaged: true, showUntracked: false, polling: "branch", hostIcon: true },
       time: { format: "12h", showSeconds: true },
       cost: { subscriptionDisplay: "both", currency: "cny" },
+      workingVibes: { color: "rainbow" },
     },
     ["default", "compact"],
   );
@@ -205,7 +192,16 @@ test("parsePowerlineConfig extracts supported segment options", () => {
     time: { format: "12h", showSeconds: true },
     cost: { subscriptionDisplay: "both", currency: "CNY" },
   });
+  assert.deepEqual(config.workingVibes, { color: "rainbow" });
   assert.deepEqual(invalidCurrency.segmentOptions, { cost: {} });
+});
+
+test("parsePowerlineConfig accepts working-vibe theme colors and hex colors", () => {
+  const semantic = parsePowerlineConfig({ workingVibes: { color: "warning" } }, ["default"]);
+  const hex = parsePowerlineConfig({ workingVibes: { color: "#89d281" } }, ["default"]);
+
+  assert.deepEqual(semantic.workingVibes, { color: "warning" });
+  assert.deepEqual(hex.workingVibes, { color: "#89d281" });
 });
 
 test("mergeSegmentOptions lets user config override preset segment defaults", () => {

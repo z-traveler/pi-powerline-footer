@@ -159,11 +159,10 @@ export interface GitStatus {
 // Usage statistics
 export interface QueueSummary {
   queueCount: number;
-  ideaCount: number;
   blockedCount: number;
   compacting: boolean;
   leadingText: string | null;
-  leadingIntent: "steer" | "follow-up" | "post-compact" | "idea" | null;
+  leadingIntent: "steer" | "follow-up" | "post-compact" | null;
   leadingStatus: "queued" | "blocked" | "delivering" | "sent" | "failed" | null;
 }
 
@@ -196,9 +195,10 @@ export interface SegmentContext {
   
   // Computed
   usageStats: UsageStats;
-  contextTokens: number;
-  contextPercent: number;
+  contextTokens: number | null;
+  contextPercent: number | null;
   contextWindow: number;
+  contextApproximate: boolean;
   autoCompactEnabled: boolean;
   customCompactionEnabled: boolean;
   usingSubscription: boolean;

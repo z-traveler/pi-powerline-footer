@@ -37,6 +37,7 @@ function createSegmentContext(overrides: Partial<SegmentContext> = {}): SegmentC
     contextTokens: 0,
     contextPercent: 0,
     contextWindow: 0,
+    contextApproximate: false,
     autoCompactEnabled: true,
     customCompactionEnabled: false,
     usingSubscription: false,
@@ -144,4 +145,29 @@ test("stale ctx guard handles old and new Pi messages on agent_end", () => {
   assert.equal(isStaleExtensionContextError(new Error("ctx.hasUI failed for another reason")), false);
   assert.match(source, /let hasUI = false;\r?\n\s+try \{\r?\n\s+hasUI = Boolean\(ctx\.hasUI\);/);
   assert.match(source, /if \(!isStaleExtensionContextError\(error\)\) throw error;\r?\n\s+currentCtx = null;\r?\n\s+return;/);
+});
+
+test("post-compaction queue delivery does not read ctx.cwd from the delayed callback", () => {
+  assert.match(source, /const queueContext = getQueueContext\(ctx\);\r?\n\s+const scheduledGeneration = sessionGeneration;\r?\n\s+queueDeliveryTimer = setTimeout/);
+  assert.match(source, /if \(scheduledGeneration !== sessionGeneration\) return;\r?\n\s+try \{\r?\n\s+const item = queueStore\.queuedDeliveryItems\(queueContext, "post-compact"\)\[0\];/);
+  assert.match(source, /catch \(error\) \{\r?\n\s+if \(!isStaleExtensionContextError\(error\)\) throw error;\r?\n\s+currentCtx = null;/);
+  assert.match(source, /trackPendingQueueDelivery\(item, deliveryText\);\r?\n\s+if \(deliverAs\) \{/);
+  assert.match(source, /function requeuePendingQueueDeliveries\(error: string\): void \{/);
+  assert.match(source, /requeuePendingQueueDeliveries\("Session ended before queued message started"\);/);
+  assert.match(source, /finishPendingQueueDelivery\(event\.prompt, ctx\);/);
+  assert.match(source, /finishPendingQueueDelivery\(getPromptHistoryText\(message\.content\), ctx\);/);
+});
+
+test("editor-adjacent widgets cache queue and last-prompt work", () => {
+  assert.match(source, /const QUEUE_SUMMARY_CACHE_TTL_MS = 250;/);
+  assert.match(source, /queueSummaryCache = null;\r?\n\s+requestImmediateStatusRender/);
+  assert.match(source, /lastPromptRenderCache\.source === lastUserPrompt/);
+});
+
+test("unknown context estimates are event-scoped and cleared before compaction", () => {
+  assert.match(source, /approximateContextUsage = event\.reason === "reload" \? estimateUnknownContextUsage\(ctx\) : null;/);
+  assert.match(source, /unknownCoreFallback: approximateContextUsage,/);
+  assert.match(source, /contextApproximate = coreContextUsage\?\.contextTokens === null && approximateContextUsage !== null;/);
+  assert.match(source, /pi\.on\("session_before_compact", async \(_event, ctx\) => \{\r?\n\s+powerlineCompacting = true;\r?\n\s+currentCtx = ctx;\r?\n\s+isStreaming = false;\r?\n\s+liveAssistantUsage = null;\r?\n\s+approximateContextUsage = null;\r?\n\s+coreContextUsageCache\.reset\(\);/);
+  assert.match(source, /pi\.on\("session_compact", async \(event, ctx\) => \{\r?\n\s+powerlineCompacting = false;\r?\n\s+currentCtx = ctx;\r?\n\s+isStreaming = false;\r?\n\s+liveAssistantUsage = null;\r?\n\s+approximateContextUsage = estimateUnknownContextUsage\(ctx\);\r?\n\s+coreContextUsageCache\.reset\(\);/);
 });

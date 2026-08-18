@@ -16,7 +16,7 @@ export interface PowerlineConfig {
   invalidPlacement: string | null;
   welcome: boolean;
   stashSharpSShortcut: boolean;
-  queue: { captureSigil: string | false };
+  workingVibes: { color?: ColorValue | "rainbow" };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -88,12 +88,6 @@ function normalizeCustomPrefix(value: unknown): string | undefined {
   return normalized ? normalized : undefined;
 }
 
-function normalizeCaptureSigil(value: unknown): string | false {
-  if (value === false) return false;
-  if (typeof value !== "string") return "#";
-  const normalized = value.trim();
-  return normalized && !/\s/.test(normalized) ? normalized : "#";
-}
 
 function normalizeCustomStatusItem(raw: unknown, idOverride?: string): CustomStatusItem | null {
   if (!isRecord(raw)) return null;
@@ -312,7 +306,7 @@ export function parsePowerlineConfig(value: unknown, presets: readonly StatusLin
     invalidPlacement: null,
     welcome: true,
     stashSharpSShortcut: false,
-    queue: { captureSigil: "#" },
+    workingVibes: {},
   };
 
   const directPreset = normalizePreset(value, presets);
@@ -324,9 +318,6 @@ export function parsePowerlineConfig(value: unknown, presets: readonly StatusLin
   const { disabledSegments, invalidDisabledSegments } = normalizeDisabledSegments(value.disabledSegments, customItems);
   const { layout, invalidLayoutSegments } = normalizeLayout(value.layout, customItems);
   const { placement, invalidPlacement } = normalizePlacement(value.placement);
-  const queue = isRecord(value.queue)
-    ? { captureSigil: normalizeCaptureSigil(value.queue.captureSigil) }
-    : defaultConfig.queue;
 
   return {
     preset: normalizePreset(value.preset, presets) ?? defaultConfig.preset,
@@ -341,7 +332,9 @@ export function parsePowerlineConfig(value: unknown, presets: readonly StatusLin
     invalidPlacement,
     welcome: value.welcome !== false,
     stashSharpSShortcut: value.stashSharpSShortcut === true,
-    queue,
+    workingVibes: isRecord(value.workingVibes) && typeof value.workingVibes.color === "string" && value.workingVibes.color.trim()
+      ? { color: value.workingVibes.color.trim() as ColorValue | "rainbow" }
+      : {},
   };
 }
 
