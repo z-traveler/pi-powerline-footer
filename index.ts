@@ -1070,6 +1070,51 @@ export function alignPowerlineContent(left: string, right: string, width: number
   return `${left}${" ".repeat(padding)}${right}`;
 }
 
+export function renderRoundedPowerlineEditorLines(
+  lines: string[],
+  statusContent: string,
+  width: number,
+  border: (text: string) => string,
+): string[] {
+  if (lines.length === 0) return lines;
+
+  const stripAnsi = (line: string) => line.replace(/\x1b\[[0-9;]*m/g, "");
+  const topMarker = /^\s*↑/.test(stripAnsi(lines[0] ?? "")) ? "↑" : "─";
+  let bottomBorderIndex = lines.length - 1;
+  for (let i = lines.length - 1; i >= 1; i--) {
+    const stripped = stripAnsi(lines[i] ?? "");
+    if (/^\s*[↓]?─{3,}/.test(stripped)) {
+      bottomBorderIndex = i;
+      break;
+    }
+  }
+  const bottomMarker = /^\s*↓/.test(stripAnsi(lines[bottomBorderIndex] ?? "")) ? "↓" : "─";
+
+  const contentWidth = Math.max(1, width - 6);
+  const statusWidth = visibleWidth(statusContent);
+  const fillWidth = Math.max(0, width - 4 - statusWidth);
+  const result = [border(`╭${topMarker}`) + statusContent + border("─".repeat(fillWidth)) + border("─╮")];
+
+  for (let i = 1; i < bottomBorderIndex; i++) {
+    const line = lines[i] || "";
+    const padding = " ".repeat(Math.max(0, contentWidth - visibleWidth(line)));
+    const isLastContent = i === bottomBorderIndex - 1;
+    result.push(isLastContent
+      ? `${border(`╰${bottomMarker}`)} ${line}${padding} ${border("─╯")}`
+      : `${border("│")}  ${line}${padding}  ${border("│")}`);
+  }
+
+  if (bottomBorderIndex === 1) {
+    result.push(`${border(`╰${bottomMarker}`)} ${" ".repeat(contentWidth)} ${border("─╯")}`);
+  }
+
+  for (let i = bottomBorderIndex + 1; i < lines.length; i++) {
+    result.push(lines[i] || "");
+  }
+
+  return result;
+}
+
 /**
  * Responsive segment layout - fits segments into top bar, overflows to secondary row.
  * When terminal is wide enough, secondary segments move up to top bar.
@@ -3205,42 +3250,9 @@ export default function powerlineFooter(pi: ExtensionAPI) {
 
           const contentWidth = Math.max(1, width - 6);
           const renderRounded = (lines: string[]): string[] => {
-            if (lines.length === 0) return lines;
-
-            let bottomBorderIndex = lines.length - 1;
-            for (let i = lines.length - 1; i >= 1; i--) {
-              const stripped = lines[i]?.replace(/\x1b\[[0-9;]*m/g, "") || "";
-              if (stripped.length > 0 && /^─{3,}/.test(stripped)) {
-                bottomBorderIndex = i;
-                break;
-              }
-            }
-
-            const bc = (s: string) => ctx.ui.theme.fg("borderAccent", s);
-            const result: string[] = [];
             const statusContent = renderPowerlinePrimaryLines(width - 4, ctx.ui.theme)[0] ?? "";
-            const statusWidth = visibleWidth(statusContent);
-            const fillWidth = Math.max(0, width - 4 - statusWidth);
-            result.push(bc("╭─") + statusContent + bc("─".repeat(fillWidth)) + bc("─╮"));
-
-            for (let i = 1; i < bottomBorderIndex; i++) {
-              const line = lines[i] || "";
-              const padding = " ".repeat(Math.max(0, contentWidth - visibleWidth(line)));
-              const isLastContent = i === bottomBorderIndex - 1;
-              result.push(isLastContent
-                ? `${bc("╰─")} ${line}${padding} ${bc("─╯")}`
-                : `${bc("│")}  ${line}${padding}  ${bc("│")}`);
-            }
-
-            if (bottomBorderIndex === 1) {
-              result.push(`${bc("╰─")} ${" ".repeat(contentWidth)} ${bc("─╯")}`);
-            }
-
-            for (let i = bottomBorderIndex + 1; i < lines.length; i++) {
-              result.push(lines[i] || "");
-            }
-
-            return result;
+            const border = (text: string) => ctx.ui.theme.fg("borderAccent", text);
+            return renderRoundedPowerlineEditorLines(lines, statusContent, width, border);
           };
 
           if (editorPerf.options.fastRender) {
