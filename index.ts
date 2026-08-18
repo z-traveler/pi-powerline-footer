@@ -874,6 +874,48 @@ export function alignPowerlineContent(left: string, right: string, width: number
   return `${left}${" ".repeat(padding)}${right}`;
 }
 
+export function renderRoundedPowerlineEditorLines(
+  lines: string[],
+  statusContent: string,
+  width: number,
+  border: (text: string) => string,
+): string[] {
+  if (lines.length === 0) return lines;
+
+  let bottomBorderIndex = lines.length - 1;
+  for (let i = lines.length - 1; i >= 1; i--) {
+    const stripped = lines[i]?.replace(/\x1b\[[0-9;]*m/g, "") || "";
+    if (stripped.length > 0 && /^─{3,}/.test(stripped)) {
+      bottomBorderIndex = i;
+      break;
+    }
+  }
+
+  const contentWidth = Math.max(1, width - 6);
+  const statusWidth = visibleWidth(statusContent);
+  const fillWidth = Math.max(0, width - 4 - statusWidth);
+  const result = [border("╭─") + statusContent + border("─".repeat(fillWidth)) + border("─╮")];
+
+  for (let i = 1; i < bottomBorderIndex; i++) {
+    const line = lines[i] || "";
+    const padding = " ".repeat(Math.max(0, contentWidth - visibleWidth(line)));
+    const isLastContent = i === bottomBorderIndex - 1;
+    result.push(isLastContent
+      ? `${border("╰─")} ${line}${padding} ${border("─╯")}`
+      : `${border("│")}  ${line}${padding}  ${border("│")}`);
+  }
+
+  if (bottomBorderIndex === 1) {
+    result.push(`${border("╰─")} ${" ".repeat(contentWidth)} ${border("─╯")}`);
+  }
+
+  for (let i = bottomBorderIndex + 1; i < lines.length; i++) {
+    result.push(lines[i] || "");
+  }
+
+  return result;
+}
+
 /**
  * Responsive segment layout - fits segments into top bar, overflows to secondary row.
  * When terminal is wide enough, secondary segments move up to top bar.
@@ -2985,51 +3027,10 @@ export default function powerlineFooter(pi: ExtensionAPI) {
         }
 
         const bc = (s: string) => ctx.ui.theme.fg("borderAccent", s);
-        const topLeft = bc("╭─");
-        const topRight = bc("─╮");
-        const bottomLeft = bc("╰─");
-        const bottomRight = bc("─╯");
-        const vertical = bc("│");
         const contentWidth = Math.max(1, width - 6);
         const lines = originalRender(contentWidth);
-
-        if (lines.length === 0) return lines;
-
-        let bottomBorderIndex = lines.length - 1;
-        for (let i = lines.length - 1; i >= 1; i--) {
-          const stripped = lines[i]?.replace(/\x1b\[[0-9;]*m/g, "") || "";
-          if (stripped.length > 0 && /^─{3,}/.test(stripped)) {
-            bottomBorderIndex = i;
-            break;
-          }
-        }
-
-        const result: string[] = [];
         const statusContent = renderPowerlinePrimaryLines(width - 4, ctx.ui.theme)[0] ?? "";
-        const statusWidth = visibleWidth(statusContent);
-        const topFillWidth = width - 4;
-        const fillWidth = Math.max(0, topFillWidth - statusWidth);
-        result.push(topLeft + statusContent + bc("─".repeat(fillWidth)) + topRight);
-
-        for (let i = 1; i < bottomBorderIndex; i++) {
-          const line = lines[i] || "";
-          const lineWidth = visibleWidth(line);
-          const padding = " ".repeat(Math.max(0, contentWidth - lineWidth));
-          const isLastContent = i === bottomBorderIndex - 1;
-          result.push(isLastContent
-            ? `${bottomLeft} ${line}${padding} ${bottomRight}`
-            : `${vertical}  ${line}${padding}  ${vertical}`);
-        }
-
-        if (bottomBorderIndex === 1) {
-          result.push(`${bottomLeft} ${" ".repeat(contentWidth)} ${bottomRight}`);
-        }
-
-        for (let i = bottomBorderIndex + 1; i < lines.length; i++) {
-          result.push(lines[i] || "");
-        }
-
-        return result;
+        return renderRoundedPowerlineEditorLines(lines, statusContent, width, bc);
       };
 
       return editor;
