@@ -105,6 +105,11 @@
 - **Git polling failures** — Keep the footer responsive and retain available Git details when the Git process cannot start. Thanks to [@hhhhddh](https://github.com/hhhhddh) for #219.
 - **Working Vibes punctuation** — Use appropriate ellipses in Latin, Chinese, Japanese, and Korean messages. Thanks to [@kyrie2to11](https://github.com/kyrie2to11) for #215.
 
+## [0.17.1-z1] - 2026-09-14
+
+### Changed
+- **Upstream 0.17.1 baseline** — Rebased onto the latest upstream stable release while preserving the rounded editor chrome, demo status format, named main-agent segment, and physical right-edge alignment.
+
 ## [0.17.1] - 2026-09-10
 
 ### Highlights
