@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.17.1-z1] - 2026-09-14
+
+### Changed
+- **Upstream 0.17.1 baseline** — Rebased onto the latest upstream stable release while preserving the rounded editor chrome, demo status format, named main-agent segment, and physical right-edge alignment.
+
 ## [0.17.1] - 2026-09-10
 
 ### Highlights
