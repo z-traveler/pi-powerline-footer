@@ -329,7 +329,8 @@ const tokenTotalSegment: StatusLineSegment = {
 const costSegment: StatusLineSegment = {
   id: "cost",
   render(ctx) {
-    const cost = ctx.usageStats.cost + (ctx.usageStats.subagentCost ?? 0);
+    const subagentCost = ctx.usageStats.billableSubagentCost ?? ctx.usageStats.subagentCost ?? 0;
+    const cost = ctx.usageStats.cost + subagentCost;
     const usingSubscription = ctx.usingSubscription;
 
     if (!cost && !usingSubscription) {
@@ -344,6 +345,10 @@ const costSegment: StatusLineSegment = {
     }
 
     const subscriptionDisplay = ctx.options.cost?.subscriptionDisplay ?? "subscription";
+    if (subscriptionDisplay === "billable-cost") {
+      if (!subagentCost) return { content: "", visible: false };
+      return { content: color(ctx, "cost", formatUsdCost(subagentCost, ctx.options.cost?.currency) ?? ""), visible: true };
+    }
     if (subscriptionDisplay === "reported-cost" && reportedCost) {
       return { content: color(ctx, "cost", reportedCost), visible: true };
     }

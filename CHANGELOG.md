@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.17.1-z3] - 2026-09-18
+
+### Added
+- **Billable subscription costs** — Add `subscriptionDisplay: "billable-cost"` to hide the idle subscription marker and catalog estimate while still showing paid subagent costs such as DeepSeek. OpenAI Codex subscription child runs are excluded.
+
 ## [0.17.1-z2] - 2026-09-18
 
 ### Fixed

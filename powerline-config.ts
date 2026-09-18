@@ -263,6 +263,7 @@ function normalizeSegmentOptions(raw: Record<string, unknown>): StatusLineSegmen
       ...(raw.cost.subscriptionDisplay === "subscription"
         || raw.cost.subscriptionDisplay === "reported-cost"
         || raw.cost.subscriptionDisplay === "both"
+        || raw.cost.subscriptionDisplay === "billable-cost"
         ? { subscriptionDisplay: raw.cost.subscriptionDisplay }
         : {}),
       ...(currency ? { currency } : {}),

@@ -115,6 +115,26 @@ test("computeSessionTokenStats sums subagent child run cost from tool results an
   assert.ok(Math.abs(stats.subagentCost - 0.96) < 1e-12);
 });
 
+test("computeSessionTokenStats excludes Codex subscription children from billable subagent cost", () => {
+  const events = [{
+    type: "message",
+    message: {
+      role: "toolResult",
+      toolName: "subagent",
+      details: {
+        results: [
+          { model: "openai-codex/gpt-5.6-sol:high", usage: { cost: 0.42 } },
+          { model: "cliproxy/deepseek-flash:max", usage: { cost: 0.58 } },
+        ],
+      },
+    },
+  }];
+
+  const stats = computeSessionTokenStats(events);
+  assert.equal(stats.subagentCost, 1);
+  assert.equal(stats.billableSubagentCost, 0.58);
+});
+
 test("computeSessionTokenStats ignores assistant messages without tokens for lastAssistant", () => {
   const events = [
     assistantEvent(makeUsage(10, 5)),

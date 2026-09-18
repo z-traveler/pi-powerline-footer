@@ -228,6 +228,15 @@ test("parsePowerlineConfig extracts supported segment options", () => {
   assert.deepEqual(invalidCurrency.segmentOptions, { cost: {} });
 });
 
+test("parsePowerlineConfig accepts billable-only subscription costs", () => {
+  const config = parsePowerlineConfig(
+    { cost: { subscriptionDisplay: "billable-cost", currency: "cny" } },
+    ["default"],
+  );
+
+  assert.deepEqual(config.segmentOptions.cost, { subscriptionDisplay: "billable-cost", currency: "CNY" });
+});
+
 test("parsePowerlineConfig accepts working-vibe theme colors and hex colors", () => {
   const semantic = parsePowerlineConfig({ workingVibes: { color: "warning" } }, ["default"]);
   const hex = parsePowerlineConfig({ workingVibes: { color: "#89d281" } }, ["default"]);

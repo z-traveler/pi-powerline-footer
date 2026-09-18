@@ -148,6 +148,34 @@ test("cost segment supports subscription display modes and converted currencies"
   assert.deepEqual(convertedCurrency, { content: "¥9.00", visible: true });
 });
 
+test("subscription cost display hides idle markers and shows only billable subagent cost", () => {
+  __setCurrencyRatesForTest({ CNY: 7.2 });
+
+  const idle = renderSegment("cost", createSegmentContext({
+    usingSubscription: true,
+    usageStats: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0.42, subagentCost: 0 },
+    options: { cost: { subscriptionDisplay: "billable-cost" } },
+  }));
+  const withPaidSubagent = renderSegment("cost", createSegmentContext({
+    usingSubscription: true,
+    usageStats: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      cost: 0.42,
+      subagentCost: 1,
+      billableSubagentCost: 0.58,
+    },
+    options: { cost: { subscriptionDisplay: "billable-cost", currency: "CNY" } },
+  }));
+
+  __resetCurrencyRatesForTest();
+
+  assert.deepEqual(idle, { content: "", visible: false });
+  assert.deepEqual(withPaidSubagent, { content: "¥4.18", visible: true });
+});
+
 test("context segment shows percentage and maximum", () => {
   const context = renderSegment("context_pct", createSegmentContext({
     contextTokens: 4_500,

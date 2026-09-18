@@ -9,6 +9,7 @@ export interface SessionTokenStats {
   cacheWrite: number;
   cost: number;
   subagentCost: number;
+  billableSubagentCost: number;
   lastAssistant: AssistantMessage | undefined;
   thinkingLevelFromSession: string | null;
 }
@@ -66,18 +67,23 @@ function subagentDetailsFromSessionEntry(e: Record<string, unknown>): { results:
 }
 
 // Sums subagent child usage cost recorded on a single session entry (parallel/chain/single runs
-// launched via the subagent tool or /parallel, /worker etc. slash commands), so the footer can
-// show total spend rather than only the interactive parent session's cost.
-function extractSubagentResultCost(e: Record<string, unknown>): number {
+// launched via the subagent tool or /parallel, /worker etc. slash commands). OpenAI Codex child
+// runs are subscription-backed, so their catalog cost is reported separately from billable spend.
+function extractSubagentResultCosts(e: Record<string, unknown>): { count: number; total: number; billable: number } {
   const details = subagentDetailsFromSessionEntry(e);
-  if (!details) return 0;
+  if (!details) return { count: 0, total: 0, billable: 0 };
   let total = 0;
+  let billable = 0;
   for (const result of details.results) {
     if (!isRecord(result)) continue;
     const usage = isRecord(result.usage) ? result.usage : undefined;
-    if (typeof usage?.cost === "number") total += usage.cost;
+    if (typeof usage?.cost !== "number") continue;
+    total += usage.cost;
+    if (typeof result.model !== "string" || !result.model.startsWith("openai-codex/")) {
+      billable += usage.cost;
+    }
   }
-  return total;
+  return { count: details.results.length, total, billable };
 }
 
 /**
@@ -95,9 +101,9 @@ function eventStatsSignature(event: unknown): string {
     return `t:${typeof event.thinkingLevel === "string" ? event.thinkingLevel : ""}`;
   }
 
-  const subagentDetails = subagentDetailsFromSessionEntry(event);
-  if (subagentDetails) {
-    return `s:${subagentDetails.results.length}:${extractSubagentResultCost(event)}`;
+  const subagentCosts = extractSubagentResultCosts(event);
+  if (subagentCosts.count > 0) {
+    return `s:${subagentCosts.count}:${subagentCosts.total}:${subagentCosts.billable}`;
   }
 
   if (event.type === "message" && isRecord(event.message)) {
@@ -122,6 +128,7 @@ function emptySessionTokenStats(): SessionTokenStats {
     cacheWrite: 0,
     cost: 0,
     subagentCost: 0,
+    billableSubagentCost: 0,
     lastAssistant: undefined,
     thinkingLevelFromSession: null,
   };
@@ -138,7 +145,9 @@ function accumulateSessionEvent(stats: SessionTokenStats, event: unknown): void 
     stats.thinkingLevelFromSession = event.thinkingLevel;
   }
 
-  stats.subagentCost += extractSubagentResultCost(event);
+  const subagentCosts = extractSubagentResultCosts(event);
+  stats.subagentCost += subagentCosts.total;
+  stats.billableSubagentCost += subagentCosts.billable;
 
   if (event.type !== "message" || !isSessionAssistantMessage(event.message)) return;
 
@@ -195,7 +204,7 @@ export class SessionBranchCache {
 }
 
 export function computeSessionTokenStats(sessionEvents: readonly unknown[]): SessionTokenStats {
-  let input = 0, output = 0, cacheRead = 0, cacheWrite = 0, cost = 0, subagentCost = 0;
+  let input = 0, output = 0, cacheRead = 0, cacheWrite = 0, cost = 0, subagentCost = 0, billableSubagentCost = 0;
   let lastAssistant: AssistantMessage | undefined;
   let thinkingLevelFromSession: string | null = null;
 
@@ -206,7 +215,9 @@ export function computeSessionTokenStats(sessionEvents: readonly unknown[]): Ses
       thinkingLevelFromSession = e.thinkingLevel;
     }
 
-    subagentCost += extractSubagentResultCost(e);
+    const subagentCosts = extractSubagentResultCosts(e);
+    subagentCost += subagentCosts.total;
+    billableSubagentCost += subagentCosts.billable;
 
     if (e.type !== "message" || !isSessionAssistantMessage(e.message)) continue;
 
@@ -223,7 +234,7 @@ export function computeSessionTokenStats(sessionEvents: readonly unknown[]): Ses
     }
   }
 
-  return { input, output, cacheRead, cacheWrite, cost, subagentCost, lastAssistant, thinkingLevelFromSession };
+  return { input, output, cacheRead, cacheWrite, cost, subagentCost, billableSubagentCost, lastAssistant, thinkingLevelFromSession };
 }
 
 /**

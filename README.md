@@ -209,7 +209,7 @@ For a compact current footer setup:
     "preset": "default",
     "path": { "mode": "basename" },
     "model": { "display": "name" },
-    "cost": { "subscriptionDisplay": "subscription", "currency": "USD" }
+    "cost": { "subscriptionDisplay": "billable-cost", "currency": "USD" }
   }
 }
 ```
@@ -220,11 +220,14 @@ Use `"model": { "display": "qualified" }` when two providers expose models with 
 
 Subscription cost display accepts:
 
-| Mode | Subscription + reported cost | Subscription + no reported cost |
-|------|------------------------------|----------------------------------|
-| `subscription` | `(sub)` | `(sub)` |
-| `reported-cost` | `$0.12` | `(sub)` |
-| `both` | `$0.12 (sub)` | `(sub)` |
+| Mode | Display |
+|------|---------|
+| `subscription` | Always `(sub)` |
+| `reported-cost` | Reported catalog cost, or `(sub)` when none is reported |
+| `both` | Reported catalog cost plus `(sub)`, or `(sub)` when none is reported |
+| `billable-cost` | Non-subscription subagent cost only; hidden when there is none |
+
+`billable-cost` suppresses the active subscription model's catalog estimate and excludes OpenAI Codex subscription subagents, while retaining costs reported by paid API subagents such as DeepSeek.
 
 Segment display formats (opt-in; defaults match the historical rendering):
 
