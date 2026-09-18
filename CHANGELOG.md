@@ -105,6 +105,11 @@
 - **Git polling failures** — Keep the footer responsive and retain available Git details when the Git process cannot start. Thanks to [@hhhhddh](https://github.com/hhhhddh) for #219.
 - **Working Vibes punctuation** — Use appropriate ellipses in Latin, Chinese, Japanese, and Korean messages. Thanks to [@kyrie2to11](https://github.com/kyrie2to11) for #215.
 
+## [0.17.1-z2] - 2026-09-18
+
+### Fixed
+- **Subscription cost display** — Treat OpenAI Codex as subscription-backed when a ChatGPT OAuth token is supplied through an API-key bridge, so the cost segment honors `subscriptionDisplay` without changing token ownership or refresh behavior.
+
 ## [0.17.1-z1] - 2026-09-14
 
 ### Changed

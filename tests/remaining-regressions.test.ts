@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { NERD_ICONS } from "../icons.ts";
+import { isSubscriptionBackedModel } from "../index.ts";
 import { isStaleExtensionContextError, shouldShowStartupWelcome } from "../lifecycle.ts";
 import { __resetCurrencyRatesForTest, __setCurrencyRatesForTest } from "../currency-rates.ts";
 import { renderSegment } from "../segments.ts";
@@ -146,6 +147,13 @@ test("extension statuses isolate colors from separators and subsequent statuses"
       "\x1b[0m\x1b[36mMCP\x1b[0m · \x1b[0mTime\x1b[0m · \x1b[0m\x1b[32mSync\x1b[0m");
     assert.equal(stripAnsi(rendered.content), "MCP · Time · Sync");
   }
+});
+
+test("OpenAI Codex stays subscription-backed when its OAuth token enters through an API-key bridge", () => {
+  const model = { id: "gpt-5.6-sol", provider: "openai-codex" };
+  const modelRegistry = { isUsingOAuth: () => false };
+
+  assert.equal(isSubscriptionBackedModel(model, modelRegistry), true);
 });
 
 test("cost segment supports subscription display modes and converted currencies", () => {
