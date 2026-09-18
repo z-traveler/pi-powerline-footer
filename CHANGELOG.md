@@ -105,6 +105,11 @@
 - **Git polling failures** — Keep the footer responsive and retain available Git details when the Git process cannot start. Thanks to [@hhhhddh](https://github.com/hhhhddh) for #219.
 - **Working Vibes punctuation** — Use appropriate ellipses in Latin, Chinese, Japanese, and Korean messages. Thanks to [@kyrie2to11](https://github.com/kyrie2to11) for #215.
 
+## [0.17.1-z3] - 2026-09-18
+
+### Added
+- **Billable subscription costs** — Add `subscriptionDisplay: "billable-cost"` to hide the idle subscription marker and catalog estimate while still showing paid subagent costs such as DeepSeek. OpenAI Codex subscription child runs are excluded.
+
 ## [0.17.1-z2] - 2026-09-18
 
 ### Fixed

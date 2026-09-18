@@ -9,6 +9,8 @@ export interface SessionTokenStats {
   cacheWrite: number;
   cost: number;
   subagentCost: number;
+  nativeSubagentCost: number;
+  billableSubagentCost: number;
   lastAssistant: AssistantMessage | undefined;
   thinkingLevelFromSession: string | null;
 }
@@ -81,19 +83,23 @@ function subagentDetailsFromSessionEntry(e: Record<string, unknown>): { results:
 }
 
 // Sums subagent child usage cost recorded on a single session entry (parallel/chain/single runs
-// launched via the subagent tool or /parallel, /worker etc. slash commands), so the footer can
-// show total spend rather than only the interactive parent session's cost.
-function extractSubagentResultCost(e: Record<string, unknown>): number {
-  if (nativeUsage(e)) return 0;
+// launched via the subagent tool or /parallel, /worker etc. slash commands). OpenAI Codex child
+// runs are subscription-backed, so their catalog cost is reported separately from billable spend.
+function extractSubagentResultCosts(e: Record<string, unknown>): { count: number; total: number; billable: number } {
   const details = subagentDetailsFromSessionEntry(e);
-  if (!details) return 0;
+  if (!details) return { count: 0, total: 0, billable: 0 };
   let total = 0;
+  let billable = 0;
   for (const result of details.results) {
     if (!isRecord(result)) continue;
     const usage = isRecord(result.usage) ? result.usage : undefined;
-    if (isFiniteNumber(usage?.cost)) total += usage.cost;
+    if (!isFiniteNumber(usage?.cost)) continue;
+    total += usage.cost;
+    if (typeof result.model !== "string" || !result.model.startsWith("openai-codex/")) {
+      billable += usage.cost;
+    }
   }
-  return total;
+  return { count: details.results.length, total, billable };
 }
 
 /**
@@ -121,7 +127,7 @@ function eventStatsSignature(event: unknown): string {
   // Include context eligibility as well as billing, even for legacy/native coexistence.
   return `${type}:${role}:${stopReason}:${assistant}:${totalTokens}:`
     + (usage ? `${usage.input}/${usage.output}/${usage.cacheRead}/${usage.cacheWrite}/${usage.cost.total}` : "")
-    + `:s:${extractSubagentResultCost(event)}`;
+    + `:s:${JSON.stringify(extractSubagentResultCosts(event))}`;
 }
 
 function emptySessionTokenStats(): SessionTokenStats {
@@ -132,6 +138,8 @@ function emptySessionTokenStats(): SessionTokenStats {
     cacheWrite: 0,
     cost: 0,
     subagentCost: 0,
+    nativeSubagentCost: 0,
+    billableSubagentCost: 0,
     lastAssistant: undefined,
     thinkingLevelFromSession: null,
   };
@@ -148,9 +156,17 @@ function accumulateSessionEvent(stats: SessionTokenStats, event: unknown): void 
     stats.thinkingLevelFromSession = event.thinkingLevel;
   }
 
-  stats.subagentCost += extractSubagentResultCost(event);
-
+  const subagentCosts = extractSubagentResultCosts(event);
   const usage = nativeUsage(event);
+  if (usage && subagentCosts.count > 0) {
+    stats.nativeSubagentCost += usage.cost.total;
+    const nativeCost = Math.max(0, usage.cost.total);
+    const unclassifiedCost = Math.max(0, nativeCost - subagentCosts.total);
+    stats.billableSubagentCost += Math.min(nativeCost, subagentCosts.billable + unclassifiedCost);
+  } else {
+    stats.subagentCost += subagentCosts.total;
+    stats.billableSubagentCost += subagentCosts.billable;
+  }
   if (usage) {
     stats.input += usage.input;
     stats.output += usage.output;

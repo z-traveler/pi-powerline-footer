@@ -115,6 +115,26 @@ test("computeSessionTokenStats sums subagent child run cost from tool results an
   assert.ok(Math.abs(stats.subagentCost - 0.96) < 1e-12);
 });
 
+test("computeSessionTokenStats excludes Codex subscription children from billable subagent cost", () => {
+  const events = [{
+    type: "message",
+    message: {
+      role: "toolResult",
+      toolName: "subagent",
+      details: {
+        results: [
+          { model: "openai-codex/gpt-5.6-sol:high", usage: { cost: 0.42 } },
+          { model: "cliproxy/deepseek-flash:max", usage: { cost: 0.58 } },
+        ],
+      },
+    },
+  }];
+
+  const stats = computeSessionTokenStats(events);
+  assert.equal(stats.subagentCost, 1);
+  assert.equal(stats.billableSubagentCost, 0.58);
+});
+
 test("computeSessionTokenStats ignores assistant messages without tokens for lastAssistant", () => {
   const events = [
     assistantEvent(makeUsage(10, 5)),
@@ -425,4 +445,48 @@ test("tree navigation resets snapshots on SDKs without a ledger count", async ()
 test("malformed metadata is safe in cached as well as direct accounting", () => {
   const entries = [{ type: Symbol("bad") }, { type: "message", message: { role: Symbol("bad"), stopReason: {} } }];
   assert.deepEqual(new SessionTokenStatsCache().get(entries), computeSessionTokenStats(entries));
+});
+
+test("native subagent usage preserves billable classification and updates the cached tail", () => {
+  const tail = {
+    type: "message", message: {
+      role: "toolResult", toolName: "subagent", usage: makeUsage(1000, 0),
+      details: { results: [
+        { model: "openai-codex/gpt", usage: { cost: 0.42 } },
+        { model: "anthropic/claude", usage: { cost: 0.58 } },
+      ] },
+    },
+  };
+  const events = [tail];
+  const cache = new SessionTokenStatsCache();
+  const first = cache.get(events);
+  assert.equal(first.cost, 1);
+  assert.equal(first.subagentCost, 0);
+  assert.equal(first.nativeSubagentCost, 1);
+  assert.equal(first.billableSubagentCost, 0.58);
+  assert.deepEqual(first, computeSessionTokenStats(events));
+  tail.message.details.results[0]!.model = "anthropic/gpt";
+  tail.message.details.results[1]!.model = "openai-codex/claude";
+  const second = cache.get(events);
+  assert.notEqual(second, first);
+  assert.equal(second.billableSubagentCost, 0.42);
+  assert.deepEqual(second, computeSessionTokenStats(events));
+  tail.message.usage.cost.total = 0;
+  assert.equal(cache.get(events).billableSubagentCost, 0);
+});
+
+test("native residual attribution refreshes after partial child details change in place", () => {
+  const tail = { type: "message", message: {
+    role: "toolResult", toolName: "subagent", usage: makeUsage(1000, 0),
+    details: { results: [{ model: "openai-codex/gpt", usage: { cost: 0.42 } }] },
+  } };
+  const events = [tail];
+  const cache = new SessionTokenStatsCache();
+  const first = cache.get(events);
+  assert.ok(Math.abs(first.billableSubagentCost - 0.58) < 1e-12);
+  tail.message.details.results[0]!.usage.cost = 0.25;
+  const second = cache.get(events);
+  assert.notEqual(second, first);
+  assert.equal(second.billableSubagentCost, 0.75);
+  assert.deepEqual(second, computeSessionTokenStats(events));
 });

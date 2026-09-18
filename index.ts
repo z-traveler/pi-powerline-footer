@@ -2987,7 +2987,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
 
     // Bill the full ledger while keeping context and thinking on the active branch.
     const tokenStats = tokenStatsCache.get(ctx.sessionManager);
-    const { input, output, cacheRead, cacheWrite, cost, subagentCost } = tokenStats;
+    const { input, output, cacheRead, cacheWrite, cost, subagentCost, nativeSubagentCost, billableSubagentCost } = tokenStats;
     const lastAssistant = tokenStats.lastAssistant;
     const thinkingLevelFromSession = tokenStats.thinkingLevelFromSession;
 
@@ -3043,7 +3043,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       sessionName: ctx.sessionManager?.getSessionName?.(),
       agentName: findMainAgentName(ctx.sessionManager?.getEntries?.() ?? []),
       cwd: ctx.cwd,
-      usageStats: { input, output, cacheRead, cacheWrite, cost, subagentCost },
+      usageStats: { input, output, cacheRead, cacheWrite, cost, subagentCost, nativeSubagentCost, billableSubagentCost },
       contextTokens,
       contextPercent,
       contextWindow,

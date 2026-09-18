@@ -6,6 +6,7 @@ import { isSubscriptionBackedModel } from "../index.ts";
 import { isStaleExtensionContextError, shouldShowStartupWelcome } from "../lifecycle.ts";
 import { __resetCurrencyRatesForTest, __setCurrencyRatesForTest } from "../currency-rates.ts";
 import { renderSegment } from "../segments.ts";
+import { computeSessionTokenStats } from "../token-stats.ts";
 import type { SegmentContext } from "../types.ts";
 
 const source = readFileSync(new URL("../index.ts", import.meta.url), "utf-8");
@@ -200,6 +201,34 @@ test("cost segment supports subscription display modes and converted currencies"
   assert.deepEqual(convertedCurrency, { content: "¥9.00", visible: true });
 });
 
+test("subscription cost display hides idle markers and shows only billable subagent cost", () => {
+  __setCurrencyRatesForTest({ CNY: 7.2 });
+
+  const idle = renderSegment("cost", createSegmentContext({
+    usingSubscription: true,
+    usageStats: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0.42, subagentCost: 0 },
+    options: { cost: { subscriptionDisplay: "billable-cost" } },
+  }));
+  const withPaidSubagent = renderSegment("cost", createSegmentContext({
+    usingSubscription: true,
+    usageStats: {
+      input: 0,
+      output: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
+      cost: 0.42,
+      subagentCost: 1,
+      billableSubagentCost: 0.58,
+    },
+    options: { cost: { subscriptionDisplay: "billable-cost", currency: "CNY" } },
+  }));
+
+  __resetCurrencyRatesForTest();
+
+  assert.deepEqual(idle, { content: "", visible: false });
+  assert.deepEqual(withPaidSubagent, { content: "¥4.18", visible: true });
+});
+
 test("context segment shows percentage and maximum", () => {
   const context = renderSegment("context_pct", createSegmentContext({
     contextTokens: 4_500,
@@ -250,4 +279,38 @@ test("unknown context estimates are event-scoped and cleared before compaction",
   assert.match(source, /contextApproximate = coreContextUsage\?\.contextTokens === null && approximateContextUsage !== null;/);
   assert.match(source, /pi\.on\("session_before_compact", async \(_event, ctx\) => \{\r?\n\s+powerlineCompacting = true;\r?\n\s+currentCtx = ctx;\r?\n\s+isStreaming = false;\r?\n\s+liveAssistantUsage = null;\r?\n\s+approximateContextUsage = null;\r?\n\s+coreContextUsageCache\.reset\(\);/);
   assert.match(source, /pi\.on\("session_compact", async \(event, ctx\) => \{\r?\n\s+powerlineCompacting = false;\r?\n\s+currentCtx = ctx;\r?\n\s+isStreaming = false;\r?\n\s+liveAssistantUsage = null;\r?\n\s+approximateContextUsage = estimateUnknownContextUsage\(ctx\);\r?\n\s+coreContextUsageCache\.reset\(\);/);
+});
+
+
+test("native mixed-provider subagent costs display only billable children for API and subscription parents", () => {
+  const stats = computeSessionTokenStats([{ type: "message", message: {
+    role: "toolResult", toolName: "subagent",
+    usage: { input: 1, output: 0, cacheRead: 0, cacheWrite: 0, cost: { total: 1 } },
+    details: { results: [
+      { model: "openai-codex/gpt", usage: { cost: 0.42 } },
+      { model: "anthropic/claude", usage: { cost: 0.58 } },
+    ] },
+  } }]);
+  const api = renderSegment("cost", createSegmentContext({ usageStats: stats }));
+  const subscription = renderSegment("cost", createSegmentContext({
+    usageStats: stats, usingSubscription: true, options: { cost: { subscriptionDisplay: "billable-cost" } },
+  }));
+  assert.deepEqual(api, { content: "$0.58", visible: true });
+  assert.deepEqual(subscription, { content: "$0.58", visible: true });
+});
+
+test("API parent retains native subagent cost when child details are unusable or partial", () => {
+  for (const results of [
+    [{}],
+    [{ model: "anthropic/claude", usage: { cost: 0.58 } }],
+    [{ model: "openai-codex/gpt", usage: { cost: 0.42 } }, {}],
+  ]) {
+    const stats = computeSessionTokenStats([{ type: "message", message: {
+      role: "toolResult", toolName: "subagent",
+      usage: { input: 1, output: 0, cacheRead: 0, cacheWrite: 0, cost: { total: 1 } },
+      details: { results },
+    } }]);
+    const cost = renderSegment("cost", createSegmentContext({ usageStats: stats }));
+    assert.deepEqual(cost, { content: results.length === 2 ? "$0.58" : "$1.00", visible: true });
+  }
 });

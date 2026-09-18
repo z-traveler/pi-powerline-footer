@@ -108,7 +108,7 @@ export interface StatusLineSegmentOptions {
     statusTtlMs?: number;
   };
   time?: { format?: "12h" | "24h"; showSeconds?: boolean };
-  cost?: { subscriptionDisplay?: "subscription" | "reported-cost" | "both"; currency?: CostCurrencyCode };
+  cost?: { subscriptionDisplay?: "subscription" | "reported-cost" | "both" | "billable-cost"; currency?: CostCurrencyCode };
   context?: { format?: "full" | "percent" };
   cache_read?: { format?: "tokens" | "percent" | "both" };
 }
@@ -179,8 +179,12 @@ export interface UsageStats {
   cacheRead: number;
   cacheWrite: number;
   cost: number;
-  // Cumulative cost of subagent child runs (e.g. /parallel, /worker) launched from this session.
+  // Cumulative reported cost of subagent child runs (e.g. /parallel, /worker).
   subagentCost: number;
+  // Native usage already included in cost for classified subagent results.
+  nativeSubagentCost?: number;
+  // Subagent cost after excluding subscription-backed OpenAI Codex child runs.
+  billableSubagentCost?: number;
 }
 
 // Context passed to segment render functions
