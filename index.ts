@@ -1173,6 +1173,14 @@ export function computeResponsiveLayout(
   };
 }
 
+export function isSubscriptionBackedModel<T extends { provider?: string }>(
+  model: T | undefined,
+  modelRegistry: { isUsingOAuth?: (model: T) => boolean } | undefined,
+): boolean {
+  if (!model) return false;
+  return model.provider === "openai-codex" || (modelRegistry?.isUsingOAuth?.(model) ?? false);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Extension
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2761,10 +2769,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     const customItemsById = new Map(config.customItems.map((item) => [item.id, item]));
     const hiddenExtensionStatusKeys = collectHiddenExtensionStatusKeys(config.customItems);
 
-    // Check if using OAuth subscription
-    const usingSubscription = ctx.model
-      ? ctx.modelRegistry?.isUsingOAuth?.(ctx.model) ?? false
-      : false;
+    const usingSubscription = isSubscriptionBackedModel(ctx.model, ctx.modelRegistry);
 
     const thinkingLevel = currentThinkingLevel ?? thinkingLevelFromSession ?? getThinkingLevelFn?.() ?? "off";
     const queueSummary: QueueSummary = allSegmentIds.includes("queue") ? getQueueSummary(ctx) : {

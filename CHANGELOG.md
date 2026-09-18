@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.17.1-z2] - 2026-09-18
+
+### Fixed
+- **Subscription cost display** — Treat OpenAI Codex as subscription-backed when a ChatGPT OAuth token is supplied through an API-key bridge, so the cost segment honors `subscriptionDisplay` without changing token ownership or refresh behavior.
+
 ## [0.17.1-z1] - 2026-09-14
 
 ### Changed
