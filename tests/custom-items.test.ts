@@ -8,6 +8,16 @@ test("fixed custom preset is removed in favor of powerline.layout", () => {
   assert.equal("custom" in PRESETS, false);
 });
 
+test("presets place weekly quota immediately after the model and inline thinking by default", () => {
+  for (const preset of Object.values(PRESETS)) {
+    const modelIndex = preset.leftSegments.indexOf("model");
+    if (modelIndex < 0) continue;
+    assert.equal(preset.leftSegments[modelIndex + 1], "weekly_quota");
+    assert.equal(preset.leftSegments.includes("thinking"), false);
+    assert.equal(preset.segmentOptions.model?.showThinkingLevel, true);
+  }
+});
+
 test("parsePowerlineConfig supports object config with custom items", () => {
   const config = parsePowerlineConfig(
     {
@@ -260,6 +270,19 @@ test("mergeSegmentOptions lets user config override preset segment defaults", ()
       context: {},
       cache_read: {},
     },
+  );
+});
+
+test("standalone thinking layouts suppress implicit inline thinking but allow an explicit override", () => {
+  const defaults = { model: { showThinkingLevel: true } };
+
+  assert.equal(
+    mergeSegmentOptions(defaults, {}, ["model", "thinking"]).model?.showThinkingLevel,
+    false,
+  );
+  assert.equal(
+    mergeSegmentOptions(defaults, { model: { showThinkingLevel: true } }, ["model", "thinking"]).model?.showThinkingLevel,
+    true,
   );
 });
 

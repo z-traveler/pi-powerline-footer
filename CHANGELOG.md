@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.17.1-z4] - 2026-09-20
+
+### Added
+- **Weekly Codex quota** — Show remaining weekly ChatGPT Codex capacity beside the main model, with threshold colors and a compact reset countdown. Weekly windows are identified by duration in either `primary_window` or `secondary_window`.
+
+### Changed
+- **Inline thinking level** — Append the live thinking level to the model name by default while preserving the standalone `thinking` segment for explicit custom layouts.
+
 ## [0.17.1-z3] - 2026-09-18
 
 ### Added

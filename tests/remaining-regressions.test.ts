@@ -68,10 +68,16 @@ test("model segment can show provider-qualified ids", () => {
     model: { id: "openai/gpt-4.1", name: "GPT 4.1", provider: "openai" },
     options: { model: { display: "qualified" } },
   }));
+  const inlineThinking = renderSegment("model", createSegmentContext({
+    model: { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", provider: "openai-codex", reasoning: true },
+    thinkingLevel: "xhigh",
+    options: { model: { showThinkingLevel: true } },
+  }));
 
   assert.equal(stripAnsi(normal.content), "Sonnet 4");
   assert.equal(stripAnsi(qualified.content), "anthropic/claude-sonnet-4");
   assert.equal(stripAnsi(alreadyQualified.content), "openai/gpt-4.1");
+  assert.equal(stripAnsi(inlineThinking.content), "GPT-5.6 Sol:xhigh");
 });
 
 test("self-colored custom items preserve ANSI resets and skip configured color", () => {

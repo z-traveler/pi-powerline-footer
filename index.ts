@@ -39,6 +39,7 @@ import { EditorPerfProfiler, readEditorPerfOptions } from "./editor-performance.
 import { CoreContextUsageCache, estimateInitialContextTokens, estimateUnknownContextUsage, resolveDisplayContextUsage, type CoreContextUsage } from "./context-usage.ts";
 import { isStaleExtensionContextError, shouldShowStartupWelcome } from "./lifecycle.ts";
 import { getDefaultColors } from "./theme.ts";
+import { fetchCodexWeeklyQuota, type WeeklyQuota } from "./weekly-quota.ts";
 import { registerCdCommand } from "./cd-command.ts";
 import {
   isSupportedSuperShortcut,
@@ -1224,6 +1225,8 @@ export default function powerlineFooter(pi: ExtensionAPI) {
   let currentThinkingLevel: string | null = null;
   let liveAssistantUsage: SessionAssistantUsage | null = null;
   let approximateContextUsage: CoreContextUsage | null = null;
+  let weeklyQuota: WeeklyQuota | null = null;
+  let weeklyQuotaRequestGeneration = 0;
   let isStreaming = false;
   let tuiRef: any = null;
   let restoreFooterStatusRepaintHook: (() => void) | null = null;
@@ -1312,6 +1315,21 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     forceNextLayoutRecompute = true;
     statusRenderScheduler.cancel();
     statusRenderScheduler.schedule(0);
+  };
+
+  const refreshWeeklyQuota = async (ctx: any): Promise<void> => {
+    const requestGeneration = ++weeklyQuotaRequestGeneration;
+    const requestSessionGeneration = sessionGeneration;
+    let nextQuota: WeeklyQuota | null;
+    try {
+      nextQuota = await fetchCodexWeeklyQuota(ctx.model, ctx.modelRegistry);
+    } catch {
+      return;
+    }
+    if (requestGeneration !== weeklyQuotaRequestGeneration
+      || requestSessionGeneration !== sessionGeneration) return;
+    weeklyQuota = nextQuota;
+    requestStatusRender();
   };
 
   const installFooterStatusRepaintHook = (footerData: ReadonlyFooterDataProvider) => {
@@ -1795,6 +1813,8 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     isStreaming = false;
     liveAssistantUsage = null;
     approximateContextUsage = event.reason === "reload" ? estimateUnknownContextUsage(ctx) : null;
+    weeklyQuota = null;
+    weeklyQuotaRequestGeneration++;
     powerlineCompacting = false;
     cancelPostCompactionDelivery();
     stashedEditorText = null;
@@ -1834,6 +1854,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       }
     }
 
+    void refreshWeeklyQuota(ctx);
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
@@ -1855,6 +1876,8 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     getThinkingLevelFn = null;
     currentThinkingLevel = null;
     liveAssistantUsage = null;
+    weeklyQuota = null;
+    weeklyQuotaRequestGeneration++;
     tuiRef = null;
     currentEditor = null;
     resetLayoutCache();
@@ -1905,7 +1928,9 @@ export default function powerlineFooter(pi: ExtensionAPI) {
   pi.on("model_select", async (_event, ctx) => {
     currentCtx = ctx;
     coreContextUsageCache.reset();
+    weeklyQuota = null;
     requestStatusRender();
+    void refreshWeeklyQuota(ctx);
   });
 
   pi.on("thinking_level_select", async (event, ctx) => {
@@ -2342,6 +2367,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     }
 
     requestStatusRender();
+    void refreshWeeklyQuota(ctx);
     schedulePostCompactionDelivery();
   });
 
@@ -2752,7 +2778,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     });
     const contextApproximate = coreContextUsage?.contextTokens === null && approximateContextUsage !== null;
 
-    const segmentOptions = mergeSegmentOptions(presetDef.segmentOptions, config.segmentOptions);
+    const segmentOptions = mergeSegmentOptions(presetDef.segmentOptions, config.segmentOptions, allSegmentIds);
 
     const gitOptions = segmentOptions.git;
     const showGit = allSegmentIds.includes("git") && [
@@ -2795,6 +2821,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       autoCompactEnabled: ctx.settingsManager?.getCompactionSettings?.()?.enabled ?? true,
       customCompactionEnabled: customCompactionEnabled || extensionStatuses.has(CUSTOM_COMPACTION_STATUS_KEY),
       usingSubscription,
+      weeklyQuota,
       queueSummary,
       sessionStartTime,
       shellModeActive: bashModeActive,

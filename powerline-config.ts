@@ -290,8 +290,9 @@ function normalizeSegmentOptions(raw: Record<string, unknown>): StatusLineSegmen
 export function mergeSegmentOptions(
   defaults: StatusLineSegmentOptions = {},
   overrides: StatusLineSegmentOptions = {},
+  activeSegments: readonly StatusLineSegmentId[] = [],
 ): StatusLineSegmentOptions {
-  return {
+  const merged: StatusLineSegmentOptions = {
     ...defaults,
     ...overrides,
     model: { ...defaults.model, ...overrides.model },
@@ -302,6 +303,11 @@ export function mergeSegmentOptions(
     context: { ...defaults.context, ...overrides.context },
     cache_read: { ...defaults.cache_read, ...overrides.cache_read },
   };
+
+  if (activeSegments.includes("thinking") && overrides.model?.showThinkingLevel === undefined) {
+    merged.model = { ...merged.model, showThinkingLevel: false };
+  }
+  return merged;
 }
 
 export function parsePowerlineConfig(value: unknown, presets: readonly StatusLinePreset[]): PowerlineConfig {

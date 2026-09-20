@@ -4,8 +4,9 @@ import { visibleWidth } from "@earendil-works/pi-tui";
 import type { BuiltinStatusLineSegmentId, RenderedSegment, SegmentContext, SemanticColor, StatusLineSegment, StatusLineSegmentId } from "./types.ts";
 import { normalizeCompactExtensionStatus, normalizeExtensionStatusValue } from "./powerline-config.ts";
 import { fg, rainbow, applyColor } from "./theme.ts";
-import { getIcons, SEP_DOT, getThinkingText } from "./icons.ts";
+import { getIcons, SEP_DOT } from "./icons.ts";
 import { formatUsdCost } from "./currency-rates.ts";
+import { formatQuotaReset } from "./weekly-quota.ts";
 import { getGitRemoteHost } from "./git-status.ts";
 import type { IconSet } from "./icons.ts";
 import type { GitHost } from "./git-status.ts";
@@ -85,14 +86,27 @@ const modelSegment: StatusLineSegment = {
     if (opts.showThinkingLevel !== false && ctx.model?.reasoning) {
       const level = ctx.thinkingLevel || "off";
       if (level !== "off") {
-        const thinkingText = getThinkingText(level);
-        if (thinkingText) {
-          content += `${SEP_DOT}${thinkingText}`;
-        }
+        content += `:${level}`;
       }
     }
 
     return { content: color(ctx, "model", content), visible: true };
+  },
+};
+
+const weeklyQuotaSegment: StatusLineSegment = {
+  id: "weekly_quota",
+  render(ctx) {
+    if (ctx.model?.provider !== "openai-codex" || !ctx.weeklyQuota) {
+      return { content: "", visible: false };
+    }
+
+    const remaining = Math.round(ctx.weeklyQuota.remainingPercent);
+    const quotaColor = remaining < 10 ? "error" : remaining < 25 ? "warning" : "success";
+    let content = ctx.theme.fg(quotaColor, `week:${remaining}%`);
+    const reset = formatQuotaReset(ctx.weeklyQuota.resetsAt);
+    if (reset) content += ctx.theme.fg("dim", ` (${reset})`);
+    return { content, visible: true };
   },
 };
 
@@ -544,6 +558,7 @@ const extensionStatusesSegment: StatusLineSegment = {
 export const SEGMENTS: Record<BuiltinStatusLineSegmentId, StatusLineSegment> = {
   pi: piSegment,
   model: modelSegment,
+  weekly_quota: weeklyQuotaSegment,
   shell_mode: shellModeSegment,
   path: pathSegment,
   git: gitSegment,
