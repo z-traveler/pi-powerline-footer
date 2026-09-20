@@ -96,7 +96,7 @@ You can also set it in the agent settings file (`~/.pi/agent/settings.json` by d
 
 | Preset | Description |
 |--------|-------------|
-| `default` | Model/thinking, weekly Codex quota, path (basename), git, context, tokens, cost |
+| `default` | Model/thinking/weekly Codex quota, path (basename), git, context, tokens, cost |
 | `minimal` | Just path (basename), git, context |
 | `compact` | Model, git, cost, context |
 | `full` | Everything including hostname, time, abbreviated path |
@@ -184,8 +184,8 @@ Use `powerline.layout` to override segment order and grouping while keeping the 
     "preset": "default",
     "separator": "chevron",
     "layout": {
-      "left": ["model", "weekly_quota", "path", "git"],
-      "right": ["context_pct", "cost"],
+      "left": ["model", "context_pct", "cost", "path", "git"],
+      "right": [],
       "secondary": ["custom:ci"]
     },
     "customItems": [
@@ -197,7 +197,7 @@ Use `powerline.layout` to override segment order and grouping while keeping the 
 
 A present `left`, `right`, or `secondary` array replaces that preset group exactly; an empty array clears it. Omitted groups keep the preset entries and automatically append custom items by their configured `position`. Explicitly listing a segment moves it out of omitted preset groups, and explicitly placed custom items are not auto-appended elsewhere. `disabledSegments` is applied after layout. `separator` accepts any style listed below; omit it to keep the preset’s separator.
 
-`right` segments are pinned to the terminal's right edge. They reserve their rendered width first; left and secondary segments use the remaining space and overflow to the secondary line when needed. Some segments are hidden when they have no value. `weekly_quota` appears only for an `openai-codex` main model with a recognized weekly window. The standalone `thinking` segment remains available for layouts that want the separate indicator. Unknown entries are ignored with a startup warning. The old fixed `custom` preset has been removed; combine any preset with `layout` instead.
+`right` segments are pinned to the terminal's right edge. They reserve their rendered width first; left and secondary segments use the remaining space and overflow to the secondary line when needed. Some segments are hidden when they have no value. Weekly quota is rendered inside `model` only for an `openai-codex` main model with a recognized weekly window. The standalone `thinking` segment remains available for layouts that want the separate indicator. Unknown entries are ignored with a startup warning. The old fixed `custom` preset has been removed; combine any preset with `layout` instead.
 
 ### Demo settings
 
@@ -216,7 +216,7 @@ For a compact current footer setup:
 
 Use `"model": { "display": "qualified" }` when two providers expose models with the same display name. Set `model.showThinkingLevel` to `false` to hide the inline suffix. Explicit custom layouts containing the standalone `thinking` segment suppress the preset's inline suffix unless `showThinkingLevel: true` is also explicitly configured.
 
-For ChatGPT-backed `openai-codex` main models, `weekly_quota` shows remaining weekly capacity as `week:87%` followed by a compact dim reset countdown such as `(6d)`. Remaining capacity below 25% is yellow and below 10% is red; otherwise it is green. The weekly window is identified by its duration, whether Codex returns it as `primary_window` or `secondary_window`. This segment is independent of `cost`, so billable API subagent costs can remain visible.
+For ChatGPT-backed `openai-codex` main models, the `model` segment also shows remaining weekly capacity as `week:87%` followed by a compact dim reset countdown such as `(6d)`. Remaining capacity below 25% is yellow and below 10% is red; otherwise it is green. The weekly window is identified by its duration, whether Codex returns it as `primary_window` or `secondary_window`. Quota rendering is independent of `cost`, so billable API subagent costs can remain visible. Legacy `weekly_quota` layout entries remain accepted but render nothing.
 
 `cost.currency` accepts `USD`, `CNY`, `EUR`, `GBP`, `JPY`, `CAD`, `AUD`, `CHF`, `INR`, or `KRW`. Pi reports costs in USD; non-USD display uses a keyless USD FX rate fetched in the background and cached for 24 hours under the Pi agent directory. If no cached rate is available yet, the cost segment renders `-- CODE` until a later footer refresh can use the fetched rate.
 
@@ -436,7 +436,7 @@ Set `powerline.workingVibes.color` to a Pi theme color such as `accent` or `warn
 
 ## Thinking Level Display
 
-By default, the live thinking level is appended to the model name, such as `GPT-5.6 Sol:xhigh`; `off` adds no suffix. Configure `model.showThinkingLevel: false` to hide it.
+By default, the live thinking level is appended to the model name, such as `GPT-5.6 Sol:xhigh`; `off` adds no suffix. The model name keeps the model color while the suffix uses the same per-level color as the standalone thinking segment, including rainbow styling for `high`, `xhigh`, and `max`. Configure `model.showThinkingLevel: false` to hide it.
 
 The standalone `thinking` segment remains supported for custom layouts and keeps its per-level colors:
 
@@ -492,7 +492,7 @@ The origin remote is detected (SSH or HTTPS) and mapped to an icon: GitHub (), G
 
 ## Segments
 
-`pi` · `model` · `weekly_quota` · `thinking` · `shell_mode` · `path` · `git` · `subagents` · `token_in` · `token_out` · `token_total` · `cost` · `context_pct` · `context_total` · `time_spent` · `time` · `session` · `agent` · `hostname` · `cache_read` · `cache_write` · `extension_statuses`
+`pi` · `model` · `thinking` · `shell_mode` · `path` · `git` · `subagents` · `token_in` · `token_out` · `token_total` · `cost` · `context_pct` · `context_total` · `time_spent` · `time` · `session` · `agent` · `hostname` · `cache_read` · `cache_write` · `extension_statuses`
 
 The `agent` segment shows the main agent selected by pi-subagents' `--agent` flag and stays hidden for ordinary sessions.
 

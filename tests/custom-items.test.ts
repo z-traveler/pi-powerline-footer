@@ -8,11 +8,11 @@ test("fixed custom preset is removed in favor of powerline.layout", () => {
   assert.equal("custom" in PRESETS, false);
 });
 
-test("presets place weekly quota immediately after the model and inline thinking by default", () => {
+test("presets merge weekly quota and thinking into the model by default", () => {
   for (const preset of Object.values(PRESETS)) {
     const modelIndex = preset.leftSegments.indexOf("model");
     if (modelIndex < 0) continue;
-    assert.equal(preset.leftSegments[modelIndex + 1], "weekly_quota");
+    assert.equal(preset.leftSegments.includes("weekly_quota"), false);
     assert.equal(preset.leftSegments.includes("thinking"), false);
     assert.equal(preset.segmentOptions.model?.showThinkingLevel, true);
   }

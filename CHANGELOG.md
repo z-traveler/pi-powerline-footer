@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.17.1-z5] - 2026-09-20
+
+### Changed
+- **Unified model status** — Render weekly Codex quota inside the model segment and apply the original per-level thinking colors to the inline thinking suffix.
+
 ## [0.17.1-z4] - 2026-09-20
 
 ### Added

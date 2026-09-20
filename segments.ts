@@ -23,6 +23,16 @@ function withIcon(icon: string, text: string): string {
   return icon ? `${icon} ${text}` : text;
 }
 
+function colorThinkingLevel(ctx: SegmentContext, level: string, text: string): string {
+  if (level === "high" || level === "xhigh" || level === "max") {
+    return rainbow(text);
+  }
+  if (level === "minimal") return color(ctx, "thinkingMinimal", text);
+  if (level === "low") return color(ctx, "thinkingLow", text);
+  if (level === "medium") return color(ctx, "thinkingMedium", text);
+  return color(ctx, "thinking", text);
+}
+
 export function findMainAgentName(entries: readonly unknown[]): string | undefined {
   for (let index = entries.length - 1; index >= 0; index--) {
     const entry = entries[index];
@@ -81,32 +91,31 @@ const modelSegment: StatusLineSegment = {
       modelName = modelName.slice(7);
     }
 
-    let content = withIcon(icons.model, modelName);
+    let content = color(ctx, "model", withIcon(icons.model, modelName));
 
     if (opts.showThinkingLevel !== false && ctx.model?.reasoning) {
       const level = ctx.thinkingLevel || "off";
       if (level !== "off") {
-        content += `:${level}`;
+        content += colorThinkingLevel(ctx, level, `:${level}`);
       }
     }
 
-    return { content: color(ctx, "model", content), visible: true };
+    if (ctx.model?.provider === "openai-codex" && ctx.weeklyQuota) {
+      const remaining = Math.round(ctx.weeklyQuota.remainingPercent);
+      const quotaColor = remaining < 10 ? "error" : remaining < 25 ? "warning" : "success";
+      content += ctx.theme.fg(quotaColor, ` week:${remaining}%`);
+      const reset = formatQuotaReset(ctx.weeklyQuota.resetsAt);
+      if (reset) content += ctx.theme.fg("dim", ` (${reset})`);
+    }
+
+    return { content, visible: true };
   },
 };
 
 const weeklyQuotaSegment: StatusLineSegment = {
   id: "weekly_quota",
-  render(ctx) {
-    if (ctx.model?.provider !== "openai-codex" || !ctx.weeklyQuota) {
-      return { content: "", visible: false };
-    }
-
-    const remaining = Math.round(ctx.weeklyQuota.remainingPercent);
-    const quotaColor = remaining < 10 ? "error" : remaining < 25 ? "warning" : "success";
-    let content = ctx.theme.fg(quotaColor, `week:${remaining}%`);
-    const reset = formatQuotaReset(ctx.weeklyQuota.resetsAt);
-    if (reset) content += ctx.theme.fg("dim", ` (${reset})`);
-    return { content, visible: true };
+  render() {
+    return { content: "", visible: false };
   },
 };
 
@@ -253,21 +262,7 @@ const thinkingSegment: StatusLineSegment = {
     const label = levelText[level] || level;
     const content = `thinking:${label}`;
 
-    if (level === "high" || level === "xhigh" || level === "max") {
-      return { content: rainbow(content), visible: true };
-    }
-
-    if (level === "minimal") {
-      return { content: color(ctx, "thinkingMinimal", content), visible: true };
-    }
-    if (level === "low") {
-      return { content: color(ctx, "thinkingLow", content), visible: true };
-    }
-    if (level === "medium") {
-      return { content: color(ctx, "thinkingMedium", content), visible: true };
-    }
-
-    return { content: color(ctx, "thinking", content), visible: true };
+    return { content: colorThinkingLevel(ctx, level, content), visible: true };
   },
 };
 

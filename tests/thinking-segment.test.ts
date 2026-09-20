@@ -74,3 +74,25 @@ test("thinking segment uses rainbow styling for high through max", () => {
     });
   }
 });
+
+test("model keeps its own color while inline thinking uses the level color", () => {
+  const colors: ColorScheme = {
+    model: "#555555",
+    thinkingLow: "#333333",
+  };
+  const lowContext = createSegmentContext("low", colors);
+  lowContext.model = { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", provider: "openai-codex", reasoning: true };
+  lowContext.options = { model: { showThinkingLevel: true } };
+
+  const low = renderSegment("model", lowContext).content;
+  assert.ok(low.startsWith(hexAnsi("#555555")));
+  assert.ok(low.endsWith(`\x1b[0m${hexAnsi("#333333")}:low\x1b[0m`));
+
+  const xhighContext = createSegmentContext("xhigh", colors);
+  xhighContext.model = { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", provider: "openai-codex", reasoning: true };
+  xhighContext.options = { model: { showThinkingLevel: true } };
+
+  const xhigh = renderSegment("model", xhighContext).content;
+  assert.ok(xhigh.startsWith(hexAnsi("#555555")));
+  assert.ok(xhigh.endsWith(`\x1b[0m${rainbow(":xhigh")}`));
+});
