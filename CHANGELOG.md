@@ -105,6 +105,14 @@
 - **Git polling failures** — Keep the footer responsive and retain available Git details when the Git process cannot start. Thanks to [@hhhhddh](https://github.com/hhhhddh) for #219.
 - **Working Vibes punctuation** — Use appropriate ellipses in Latin, Chinese, Japanese, and Korean messages. Thanks to [@kyrie2to11](https://github.com/kyrie2to11) for #215.
 
+## [0.17.1-z4] - 2026-09-20
+
+### Added
+- **Weekly Codex quota** — Show remaining weekly ChatGPT Codex capacity beside the main model, with threshold colors and a compact reset countdown. Weekly windows are identified by duration in either `primary_window` or `secondary_window`.
+
+### Changed
+- **Inline thinking level** — Append the live thinking level to the model name by default while preserving the standalone `thinking` segment for explicit custom layouts.
+
 ## [0.17.1-z3] - 2026-09-18
 
 ### Added

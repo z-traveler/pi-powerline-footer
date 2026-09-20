@@ -23,13 +23,13 @@ const NERD_COLORS: ColorScheme = {
 
 export const PRESETS: Record<StatusLinePreset, PresetDef> = {
   default: {
-    leftSegments: ["model", "thinking", "shell_mode", "path", "git", "queue", "context_pct", "cache_read", "cost"],
+    leftSegments: ["model", "weekly_quota", "shell_mode", "path", "git", "queue", "context_pct", "cache_read", "cost"],
     rightSegments: [],
     secondarySegments: ["extension_statuses"],
     separator: "powerline-thin",
     colors: DEFAULT_COLORS,
     segmentOptions: {
-      model: { showThinkingLevel: false },
+      model: { showThinkingLevel: true },
       path: { mode: "basename" },
       git: { showBranch: true, showStaged: true, showUnstaged: true, showUntracked: true },
     },
@@ -47,23 +47,23 @@ export const PRESETS: Record<StatusLinePreset, PresetDef> = {
   },
 
   compact: {
-    leftSegments: ["model", "shell_mode", "git"],
+    leftSegments: ["model", "weekly_quota", "shell_mode", "git"],
     rightSegments: ["queue", "cost", "context_pct"],
     separator: "powerline-thin",
     colors: DEFAULT_COLORS,
     segmentOptions: {
-      model: { showThinkingLevel: false },
+      model: { showThinkingLevel: true },
       git: { showBranch: true, showStaged: true, showUnstaged: true, showUntracked: false },
     },
   },
 
   full: {
-    leftSegments: ["hostname", "model", "thinking", "shell_mode", "path", "git", "queue", "subagents"],
+    leftSegments: ["hostname", "model", "weekly_quota", "shell_mode", "path", "git", "queue", "subagents"],
     rightSegments: ["token_in", "token_out", "cache_read", "cost", "context_pct", "time_spent", "time", "extension_statuses"],
     separator: "powerline",
     colors: DEFAULT_COLORS,
     segmentOptions: {
-      model: { showThinkingLevel: false },
+      model: { showThinkingLevel: true },
       path: { mode: "abbreviated", maxLength: 50 },
       git: { showBranch: true, showStaged: true, showUnstaged: true, showUntracked: true },
       time: { format: "24h", showSeconds: false },
@@ -71,12 +71,12 @@ export const PRESETS: Record<StatusLinePreset, PresetDef> = {
   },
 
   nerd: {
-    leftSegments: ["hostname", "model", "thinking", "shell_mode", "path", "git", "queue", "session", "subagents"],
+    leftSegments: ["hostname", "model", "weekly_quota", "shell_mode", "path", "git", "queue", "session", "subagents"],
     rightSegments: ["token_in", "token_out", "cache_read", "cache_write", "cost", "context_pct", "context_total", "time_spent", "time", "extension_statuses"],
     separator: "powerline",
     colors: NERD_COLORS,
     segmentOptions: {
-      model: { showThinkingLevel: false },
+      model: { showThinkingLevel: true },
       path: { mode: "abbreviated", maxLength: 60 },
       git: { showBranch: true, showStaged: true, showUnstaged: true, showUntracked: true },
       time: { format: "24h", showSeconds: true },
@@ -84,7 +84,7 @@ export const PRESETS: Record<StatusLinePreset, PresetDef> = {
   },
 
   ascii: {
-    leftSegments: ["model", "shell_mode", "path", "git"],
+    leftSegments: ["model", "weekly_quota", "shell_mode", "path", "git"],
     rightSegments: ["queue", "token_total", "cost", "context_pct"],
     separator: "ascii",
     colors: MINIMAL_COLORS,

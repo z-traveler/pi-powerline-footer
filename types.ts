@@ -1,5 +1,6 @@
 import type { Theme, ThemeColor } from "@earendil-works/pi-coding-agent";
 import type { CostCurrencyCode } from "./currency-rates.ts";
+import type { WeeklyQuota } from "./weekly-quota.ts";
 
 // Theme color - a pi theme color name, a custom hex color, or the rainbow effect
 export type ColorValue = ThemeColor | `#${string}` | "rainbow";
@@ -36,6 +37,7 @@ export type ColorScheme = Partial<Record<SemanticColor, ColorValue>>;
 export const BUILTIN_STATUS_LINE_SEGMENT_IDS = [
   "pi",
   "model",
+  "weekly_quota",
   "shell_mode",
   "path",
   "git",
@@ -214,6 +216,7 @@ export interface SegmentContext {
   autoCompactEnabled: boolean;
   customCompactionEnabled: boolean;
   usingSubscription: boolean;
+  weeklyQuota?: WeeklyQuota | null;
   queueSummary: QueueSummary;
   sessionStartTime: number;
   shellModeActive: boolean;
