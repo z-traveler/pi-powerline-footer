@@ -86,7 +86,29 @@ test("thinking segment honors per-level colors for high through max", () => {
   const xhigh = renderSegment("thinking", createSegmentContext("xhigh", colors));
   const max = renderSegment("thinking", createSegmentContext("max", colors));
 
-  assert.equal(high.content, `${hexAnsi("#111111")}think:high\x1b[0m`);
-  assert.equal(xhigh.content, `${hexAnsi("#222222")}think:xhigh\x1b[0m`);
-  assert.equal(max.content, `${hexAnsi("#333333")}think:max\x1b[0m`);
+  assert.equal(high.content, `${hexAnsi("#111111")}thinking:high\x1b[0m`);
+  assert.equal(xhigh.content, `${hexAnsi("#222222")}thinking:xhigh\x1b[0m`);
+  assert.equal(max.content, `${hexAnsi("#333333")}thinking:max\x1b[0m`);
+});
+
+test("model keeps its own color while inline thinking uses the level color", () => {
+  const colors: ColorScheme = {
+    model: "#555555",
+    thinkingLow: "#333333",
+  };
+  const lowContext = createSegmentContext("low", colors);
+  lowContext.model = { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", provider: "openai-codex", reasoning: true };
+  lowContext.options = { model: { showThinkingLevel: true } };
+
+  const low = renderSegment("model", lowContext).content;
+  assert.ok(low.startsWith(hexAnsi("#555555")));
+  assert.ok(low.endsWith(`\x1b[0m${hexAnsi("#333333")}:low\x1b[0m`));
+
+  const xhighContext = createSegmentContext("xhigh", colors);
+  xhighContext.model = { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", provider: "openai-codex", reasoning: true };
+  xhighContext.options = { model: { showThinkingLevel: true } };
+
+  const xhigh = renderSegment("model", xhighContext).content;
+  assert.ok(xhigh.startsWith(hexAnsi("#555555")));
+  assert.ok(xhigh.endsWith(`\x1b[0m${rainbow(":xhigh")}`));
 });

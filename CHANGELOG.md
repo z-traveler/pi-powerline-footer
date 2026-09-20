@@ -105,6 +105,11 @@
 - **Git polling failures** — Keep the footer responsive and retain available Git details when the Git process cannot start. Thanks to [@hhhhddh](https://github.com/hhhhddh) for #219.
 - **Working Vibes punctuation** — Use appropriate ellipses in Latin, Chinese, Japanese, and Korean messages. Thanks to [@kyrie2to11](https://github.com/kyrie2to11) for #215.
 
+## [0.17.1-z5] - 2026-09-20
+
+### Changed
+- **Unified model status** — Render weekly Codex quota inside the model segment and apply the original per-level thinking colors to the inline thinking suffix.
+
 ## [0.17.1-z4] - 2026-09-20
 
 ### Added

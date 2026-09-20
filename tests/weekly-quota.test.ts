@@ -115,23 +115,24 @@ test("quota reset uses a compact countdown", () => {
   assert.equal(formatQuotaReset(now / 1000 + 6 * 24 * 60 * 60, now), "6d");
 });
 
-test("weekly quota colors remaining capacity and renders reset time in dim parentheses", () => {
+test("model includes weekly quota with threshold colors and a dim reset countdown", () => {
   const now = Date.now();
   const resetsAt = Math.floor(now / 1000) + 6 * 24 * 60 * 60;
-  const render = (remainingPercent: number) => renderSegment("weekly_quota", createSegmentContext({
+  const render = (remainingPercent: number) => renderSegment("model", createSegmentContext({
     weeklyQuota: { remainingPercent, resetsAt },
   })).content;
 
-  assert.equal(render(80), "<success>week:80%</success><dim> (6d)</dim>");
-  assert.equal(render(24), "<warning>week:24%</warning><dim> (6d)</dim>");
-  assert.equal(render(9), "<error>week:9%</error><dim> (6d)</dim>");
+  assert.ok(render(80).endsWith("<success> week:80%</success><dim> (6d)</dim>"));
+  assert.ok(render(24).endsWith("<warning> week:24%</warning><dim> (6d)</dim>"));
+  assert.ok(render(9).endsWith("<error> week:9%</error><dim> (6d)</dim>"));
 });
 
-test("weekly quota stays hidden for non-Codex main models", () => {
-  const rendered = renderSegment("weekly_quota", createSegmentContext({
+test("model omits weekly quota for non-Codex main models and the legacy segment stays hidden", () => {
+  const context = createSegmentContext({
     model: { id: "deepseek-chat", provider: "deepseek" },
     weeklyQuota: { remainingPercent: 80, resetsAt: Math.floor(Date.now() / 1000) + WEEK_SECONDS },
-  }));
+  });
 
-  assert.deepEqual(rendered, { content: "", visible: false });
+  assert.equal(renderSegment("model", context).content.includes("week:"), false);
+  assert.deepEqual(renderSegment("weekly_quota", context), { content: "", visible: false });
 });
