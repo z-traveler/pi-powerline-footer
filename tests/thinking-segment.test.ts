@@ -86,6 +86,7 @@ test("model appends Session Fast after the inline thinking level", () => {
   context.options = { model: { showThinkingLevel: true } };
 
   assert.match(stripAnsi(renderSegment("model", context).content), /GPT-5\.6 Sol:low:fast$/);
+  assert.ok(renderSegment("model", context).content.endsWith(`${hexAnsi("#89d281")}:fast\x1b[0m`));
 });
 
 test("model keeps its own color while inline thinking uses the level color", () => {

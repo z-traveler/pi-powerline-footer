@@ -436,7 +436,7 @@ Set `powerline.workingVibes.color` to a Pi theme color such as `accent` or `warn
 
 ## Thinking Level Display
 
-By default, the live thinking level is appended to the model name, such as `GPT-5.6 Sol:xhigh`; `off` adds no suffix. When pi-subagents Session Fast is enabled, `:fast` is appended after the thinking level, for example `GPT-5.6 Sol:xhigh:fast`. The model name and `:fast` suffix keep the model color while the thinking suffix uses the same per-level color as the standalone thinking segment, including rainbow styling for `high`, `xhigh`, and `max`. Configure `model.showThinkingLevel: false` to hide the thinking suffix.
+By default, the live thinking level is appended to the model name, such as `GPT-5.6 Sol:xhigh`; `off` adds no suffix. When pi-subagents Session Fast is enabled, a light green `:fast` is appended after the thinking level, for example `GPT-5.6 Sol:xhigh:fast`. The model name keeps the model color while the thinking suffix uses the same per-level color as the standalone thinking segment, including rainbow styling for `high`, `xhigh`, and `max`. Configure `model.showThinkingLevel: false` to hide the thinking suffix.
 
 The standalone `thinking` segment remains supported for custom layouts and keeps its per-level colors:
 
