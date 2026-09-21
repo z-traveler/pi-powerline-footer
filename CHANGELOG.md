@@ -105,6 +105,11 @@
 - **Git polling failures** — Keep the footer responsive and retain available Git details when the Git process cannot start. Thanks to [@hhhhddh](https://github.com/hhhhddh) for #219.
 - **Working Vibes punctuation** — Use appropriate ellipses in Latin, Chinese, Japanese, and Korean messages. Thanks to [@kyrie2to11](https://github.com/kyrie2to11) for #215.
 
+## [0.17.1-z6] - 2026-09-21
+
+### Changed
+- **Unified Session Fast status** — Append `:fast` to the model status after the thinking level and remove the duplicate aggregate extension status when the model segment is enabled.
+
 ## [0.17.1-z5] - 2026-09-20
 
 ### Changed

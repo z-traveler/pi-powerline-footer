@@ -33,6 +33,13 @@ function colorThinkingLevel(ctx: SegmentContext, level: string, text: string): s
   return color(ctx, "thinking", text);
 }
 
+export const FAST_MODE_STATUS_KEY = "pi-subagents:session-fast-mode";
+
+function hasFastModeStatus(ctx: SegmentContext): boolean {
+  const status = ctx.extensionStatuses.get(FAST_MODE_STATUS_KEY);
+  return status !== undefined && normalizeCompactExtensionStatus(status) === "fast";
+}
+
 export function findMainAgentName(entries: readonly unknown[]): string | undefined {
   for (let index = entries.length - 1; index >= 0; index--) {
     const entry = entries[index];
@@ -98,6 +105,10 @@ const modelSegment: StatusLineSegment = {
       if (level !== "off") {
         content += colorThinkingLevel(ctx, level, `:${level}`);
       }
+    }
+
+    if (hasFastModeStatus(ctx)) {
+      content += color(ctx, "model", ":fast");
     }
 
     if (ctx.model?.provider === "openai-codex" && ctx.weeklyQuota) {
