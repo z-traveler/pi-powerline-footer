@@ -108,7 +108,7 @@ const modelSegment: StatusLineSegment = {
     }
 
     if (hasFastModeStatus(ctx)) {
-      content += color(ctx, "model", ":fast");
+      content += applyColor(ctx.theme, "#89d281", ":fast");
     }
 
     if (ctx.model?.provider === "openai-codex" && ctx.weeklyQuota) {
