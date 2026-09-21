@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { renderSegment } from "../segments.ts";
+import { FAST_MODE_STATUS_KEY, renderSegment } from "../segments.ts";
 import { rainbow } from "../theme.ts";
 import type { ColorScheme, SegmentContext, ThemeLike } from "../types.ts";
 
@@ -10,6 +10,10 @@ function hexAnsi(hex: `#${string}`): string {
   const g = parseInt(value.slice(2, 4), 16);
   const b = parseInt(value.slice(4, 6), 16);
   return `\x1b[38;2;${r};${g};${b}m`;
+}
+
+function stripAnsi(text: string): string {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
 }
 
 function createSegmentContext(thinkingLevel: string, colors: ColorScheme): SegmentContext {
@@ -73,6 +77,15 @@ test("thinking segment uses rainbow styling for high through max", () => {
       visible: true,
     });
   }
+});
+
+test("model appends Session Fast after the inline thinking level", () => {
+  const context = createSegmentContext("low", { model: "#555555", thinkingLow: "#333333" });
+  context.model = { id: "gpt-5.6-sol", name: "GPT-5.6 Sol", provider: "openai-codex", reasoning: true };
+  context.extensionStatuses = new Map([[FAST_MODE_STATUS_KEY, "fast"]]);
+  context.options = { model: { showThinkingLevel: true } };
+
+  assert.match(stripAnsi(renderSegment("model", context).content), /GPT-5\.6 Sol:low:fast$/);
 });
 
 test("model keeps its own color while inline thinking uses the level color", () => {
