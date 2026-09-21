@@ -5,7 +5,7 @@
 ## [0.17.1-z6] - 2026-09-21
 
 ### Changed
-- **Unified Session Fast status** — Append `:fast` to the model status after the thinking level and remove the duplicate aggregate extension status when the model segment is enabled.
+- **Unified Session Fast status** — Append a light green `:fast` to the model status after the thinking level and remove the duplicate aggregate extension status when the model segment is enabled.
 
 ## [0.17.1-z5] - 2026-09-20
 
