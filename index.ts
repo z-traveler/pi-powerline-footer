@@ -27,7 +27,7 @@ import { getPreset, PRESETS } from "./presets.ts";
 import { getAgentPath } from "./paths.ts";
 import { collectHiddenExtensionStatusKeys, getNotificationExtensionStatuses, mergeSegmentOptions, mergeSegmentsWithCustomItems, nextPowerlineSettingWithOptions, nextPowerlineSettingWithPreset, parsePowerlineConfig } from "./powerline-config.ts";
 import { getSeparator } from "./separators.ts";
-import { findMainAgentName, renderSegment } from "./segments.ts";
+import { FAST_MODE_STATUS_KEY, findMainAgentName, renderSegment } from "./segments.ts";
 import { resolveThinkingLevelSelection } from "./thinking-level.ts";
 import { getGitStatus, invalidateGitStatus, invalidateGitBranch, subscribeGitUpdates } from "./git-status.ts";
 import { SessionBranchCache, SessionTokenStatsCache } from "./token-stats.ts";
@@ -2794,6 +2794,9 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     const extensionStatuses = footerDataRef?.getExtensionStatuses() ?? new Map();
     const customItemsById = new Map(config.customItems.map((item) => [item.id, item]));
     const hiddenExtensionStatusKeys = collectHiddenExtensionStatusKeys(config.customItems);
+    if (allSegmentIds.includes("model")) {
+      hiddenExtensionStatusKeys.add(FAST_MODE_STATUS_KEY);
+    }
 
     const usingSubscription = isSubscriptionBackedModel(ctx.model, ctx.modelRegistry);
 
