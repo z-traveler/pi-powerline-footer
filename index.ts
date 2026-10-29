@@ -39,7 +39,7 @@ import { EditorPerfProfiler, readEditorPerfOptions } from "./editor-performance.
 import { CoreContextUsageCache, estimateInitialContextTokens, estimateUnknownContextUsage, resolveDisplayContextUsage, type CoreContextUsage } from "./context-usage.ts";
 import { isStaleExtensionContextError, shouldShowStartupWelcome } from "./lifecycle.ts";
 import { getDefaultColors } from "./theme.ts";
-import { fetchCodexWeeklyQuota, type WeeklyQuota } from "./weekly-quota.ts";
+import { fetchClaudeQuota, fetchCodexWeeklyQuota, type ClaudeQuota, type WeeklyQuota } from "./weekly-quota.ts";
 import { registerCdCommand } from "./cd-command.ts";
 import {
   isSupportedSuperShortcut,
@@ -1226,6 +1226,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
   let liveAssistantUsage: SessionAssistantUsage | null = null;
   let approximateContextUsage: CoreContextUsage | null = null;
   let weeklyQuota: WeeklyQuota | null = null;
+  let claudeQuota: ClaudeQuota | null = null;
   let weeklyQuotaRequestGeneration = 0;
   let isStreaming = false;
   let tuiRef: any = null;
@@ -1317,18 +1318,23 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     statusRenderScheduler.schedule(0);
   };
 
-  const refreshWeeklyQuota = async (ctx: any): Promise<void> => {
+  const refreshQuotas = async (ctx: any): Promise<void> => {
     const requestGeneration = ++weeklyQuotaRequestGeneration;
     const requestSessionGeneration = sessionGeneration;
     let nextQuota: WeeklyQuota | null;
+    let nextClaudeQuota: ClaudeQuota | null;
     try {
-      nextQuota = await fetchCodexWeeklyQuota(ctx.model, ctx.modelRegistry);
+      [nextQuota, nextClaudeQuota] = await Promise.all([
+        fetchCodexWeeklyQuota(ctx.model, ctx.modelRegistry),
+        fetchClaudeQuota(ctx.model, ctx.modelRegistry),
+      ]);
     } catch {
       return;
     }
     if (requestGeneration !== weeklyQuotaRequestGeneration
       || requestSessionGeneration !== sessionGeneration) return;
     weeklyQuota = nextQuota;
+    claudeQuota = nextClaudeQuota;
     requestStatusRender();
   };
 
@@ -1814,6 +1820,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     liveAssistantUsage = null;
     approximateContextUsage = event.reason === "reload" ? estimateUnknownContextUsage(ctx) : null;
     weeklyQuota = null;
+    claudeQuota = null;
     weeklyQuotaRequestGeneration++;
     powerlineCompacting = false;
     cancelPostCompactionDelivery();
@@ -1854,7 +1861,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       }
     }
 
-    void refreshWeeklyQuota(ctx);
+    void refreshQuotas(ctx);
   });
 
   pi.on("session_shutdown", async (_event, ctx) => {
@@ -1877,6 +1884,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     currentThinkingLevel = null;
     liveAssistantUsage = null;
     weeklyQuota = null;
+    claudeQuota = null;
     weeklyQuotaRequestGeneration++;
     tuiRef = null;
     currentEditor = null;
@@ -1929,8 +1937,9 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     currentCtx = ctx;
     coreContextUsageCache.reset();
     weeklyQuota = null;
+    claudeQuota = null;
     requestStatusRender();
-    void refreshWeeklyQuota(ctx);
+    void refreshQuotas(ctx);
   });
 
   pi.on("thinking_level_select", async (event, ctx) => {
@@ -2367,7 +2376,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
     }
 
     requestStatusRender();
-    void refreshWeeklyQuota(ctx);
+    void refreshQuotas(ctx);
     schedulePostCompactionDelivery();
   });
 
@@ -2825,6 +2834,7 @@ export default function powerlineFooter(pi: ExtensionAPI) {
       customCompactionEnabled: customCompactionEnabled || extensionStatuses.has(CUSTOM_COMPACTION_STATUS_KEY),
       usingSubscription,
       weeklyQuota,
+      claudeQuota,
       queueSummary,
       sessionStartTime,
       shellModeActive: bashModeActive,

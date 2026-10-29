@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.17.1-z7] - 2026-10-29
+
+### Added
+- **Claude subscription quota** — Show remaining five-hour and weekly capacity beside the selected `claude-code` or OAuth-authenticated `anthropic` main model, using the existing Codex threshold colors and dim reset countdowns. Claude Code credentials are read-only; API-key and gateway models do not display local subscription quota.
+
 ## [0.17.1-z6] - 2026-09-21
 
 ### Changed

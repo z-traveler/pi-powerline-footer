@@ -111,11 +111,17 @@ const modelSegment: StatusLineSegment = {
       content += applyColor(ctx.theme, "#89d281", ":fast");
     }
 
-    if (ctx.model?.provider === "openai-codex" && ctx.weeklyQuota) {
-      const remaining = Math.round(ctx.weeklyQuota.remainingPercent);
+    const quotas = ctx.model?.provider === "openai-codex"
+      ? [["week", ctx.weeklyQuota] as const]
+      : ctx.model?.provider === "claude-code" || (ctx.model?.provider === "anthropic" && ctx.usingSubscription)
+        ? [["5h", ctx.claudeQuota?.fiveHour] as const, ["week", ctx.claudeQuota?.weekly] as const]
+        : [];
+    for (const [label, quota] of quotas) {
+      if (!quota) continue;
+      const remaining = Math.round(quota.remainingPercent);
       const quotaColor = remaining < 10 ? "error" : remaining < 25 ? "warning" : "success";
-      content += ctx.theme.fg(quotaColor, ` week:${remaining}%`);
-      const reset = formatQuotaReset(ctx.weeklyQuota.resetsAt);
+      content += ctx.theme.fg(quotaColor, ` ${label}:${remaining}%`);
+      const reset = formatQuotaReset(quota.resetsAt);
       if (reset) content += ctx.theme.fg("dim", ` (${reset})`);
     }
 

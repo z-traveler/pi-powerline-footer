@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { fetchCodexWeeklyQuota, findWeeklyQuota, formatQuotaReset } from "../weekly-quota.ts";
+import { fetchClaudeQuota, fetchCodexWeeklyQuota, findClaudeQuota, findWeeklyQuota, formatQuotaReset } from "../weekly-quota.ts";
 import { renderSegment } from "../segments.ts";
 import type { SegmentContext } from "../types.ts";
 
@@ -106,6 +106,106 @@ test("Codex quota fetch is limited to openai-codex and scopes the request to the
   assert.equal(requestedHeaders.get("chatgpt-account-id"), "acct-123");
 });
 
+test("Claude quota reports remaining five-hour and aggregate weekly capacity", () => {
+  assert.deepEqual(findClaudeQuota({
+    five_hour: { utilization: 12.5, resets_at: "2027-01-15T08:00:00Z" },
+    seven_day: { utilization: 76, resets_at: "2027-01-20T08:00:00Z" },
+    seven_day_sonnet: { utilization: 90, resets_at: "2027-01-20T08:00:00Z" },
+  }), {
+    fiveHour: { remainingPercent: 87.5, resetsAt: 1_800_000_000 },
+    weekly: { remainingPercent: 24, resetsAt: 1_800_432_000 },
+  });
+});
+
+test("Claude Code quota uses its existing local login without Pi auth or token refresh", async () => {
+  let requestedUrl = "";
+  let requestedHeaders = new Headers();
+  const quota = await fetchClaudeQuota(
+    { id: "claude-sonnet-5", provider: "claude-code" },
+    undefined,
+    async (input, init) => {
+      requestedUrl = String(input);
+      requestedHeaders = new Headers(init?.headers);
+      assert.equal(init?.method, "GET");
+      return Response.json({ five_hour: { utilization: 10, resets_at: null }, seven_day: { utilization: 20 } });
+    },
+    async () => JSON.stringify({ claudeAiOauth: { accessToken: "claude-code-test-token" } }),
+  );
+
+  assert.deepEqual(quota, {
+    fiveHour: { remainingPercent: 90, resetsAt: null },
+    weekly: { remainingPercent: 80, resetsAt: null },
+  });
+  assert.equal(requestedUrl, "https://api.anthropic.com/api/oauth/usage");
+  assert.equal(requestedHeaders.get("authorization"), "Bearer claude-code-test-token");
+  assert.equal(requestedHeaders.get("anthropic-beta"), "oauth-2025-04-20");
+});
+
+test("Claude quota omits missing or malformed windows instead of assuming full capacity", () => {
+  for (const payload of [null, {}, { five_hour: null, seven_day: null }, { five_hour: { utilization: "10" } }]) {
+    assert.equal(findClaudeQuota(payload), null);
+  }
+  assert.deepEqual(findClaudeQuota({
+    five_hour: { utilization: 120, resets_at: "invalid" },
+    seven_day: { utilization: NaN },
+  }), { fiveHour: { remainingPercent: 0, resetsAt: null }, weekly: null });
+  assert.deepEqual(findClaudeQuota({ seven_day: { utilization: 0 } }), {
+    fiveHour: null, weekly: { remainingPercent: 100, resetsAt: null },
+  });
+});
+
+test("Anthropic subscription quota uses Pi OAuth rather than the Claude Code account", async () => {
+  const registry = {
+    isUsingOAuth: () => true,
+    async getApiKeyAndHeaders() {
+      return { ok: true as const, headers: { Authorization: "Bearer pi-oauth-token" } };
+    },
+  };
+  const quota = await fetchClaudeQuota(
+    { id: "claude-sonnet-5", provider: "anthropic" },
+    registry,
+    async (_input, init) => {
+      assert.equal(new Headers(init?.headers).get("authorization"), "Bearer pi-oauth-token");
+      return Response.json({ seven_day: { utilization: 15 } });
+    },
+    async () => { throw new Error("Must not read a different account's credentials"); },
+  );
+  assert.deepEqual(quota, { fiveHour: null, weekly: { remainingPercent: 85, resetsAt: null } });
+});
+
+test("API and gateway Claude models never request local subscription quota", async () => {
+  let externalCalls = 0;
+  const registry = {
+    isUsingOAuth: () => false,
+    async getApiKeyAndHeaders() { externalCalls++; return { ok: true as const, apiKey: "api-key" }; },
+  };
+  for (const provider of ["anthropic", "cmh", "cliproxy", "openai-codex"]) {
+    assert.equal(await fetchClaudeQuota(
+      { id: "claude-sonnet-5", provider },
+      registry,
+      async () => { externalCalls++; return Response.json({}); },
+      async () => { externalCalls++; return "{}"; },
+    ), null);
+  }
+  assert.equal(externalCalls, 0);
+});
+
+test("unavailable Claude credentials, network errors and rejected usage requests stay hidden", async () => {
+  const model = { id: "claude-sonnet-5", provider: "claude-code" };
+  const credentials = async () => JSON.stringify({ claudeAiOauth: { accessToken: "test-token" } });
+  for (const readCredentials of [async () => { throw new Error("missing credentials"); }, async () => "bad json", async () => "{}"]) {
+    assert.equal(await fetchClaudeQuota(model, undefined, async () => { throw new Error("Must not fetch"); }, readCredentials), null);
+  }
+  for (const fetchImpl of [
+    async () => { throw new Error("proxy unavailable"); },
+    async () => new Response("Unauthorized", { status: 401 }),
+    async () => new Response("Rate limited", { status: 429 }),
+    async () => new Response("Invalid JSON"),
+  ]) {
+    assert.equal(await fetchClaudeQuota(model, undefined, fetchImpl, credentials), null);
+  }
+});
+
 test("quota reset uses a compact countdown", () => {
   const now = 1_700_000_000_000;
 
@@ -125,6 +225,33 @@ test("model includes weekly quota with threshold colors and a dim reset countdow
   assert.ok(render(80).endsWith("<success> week:80%</success><dim> (6d)</dim>"));
   assert.ok(render(24).endsWith("<warning> week:24%</warning><dim> (6d)</dim>"));
   assert.ok(render(9).endsWith("<error> week:9%</error><dim> (6d)</dim>"));
+});
+
+test("Claude subscription models show both remaining windows in the Codex quota style", () => {
+  const now = Math.floor(Date.now() / 1000);
+  for (const provider of ["claude-code", "anthropic"]) {
+    const result = renderSegment("model", createSegmentContext({
+      model: { id: "claude-sonnet-5", provider },
+      claudeQuota: {
+        fiveHour: { remainingPercent: 80, resetsAt: now + 2 * 60 * 60 },
+        weekly: { remainingPercent: 24, resetsAt: now + 6 * 24 * 60 * 60 },
+      },
+    }));
+    assert.ok(result.content.endsWith("<success> 5h:80%</success><dim> (2h)</dim><warning> week:24%</warning><dim> (6d)</dim>"));
+  }
+});
+
+test("Claude quota thresholds match Codex, and other main models never show stale Claude quota", () => {
+  const claudeQuota = { fiveHour: { remainingPercent: 9, resetsAt: null }, weekly: null };
+  const claude = createSegmentContext({ model: { id: "claude-sonnet-5", provider: "claude-code" }, claudeQuota });
+  assert.ok(renderSegment("model", claude).content.endsWith("<error> 5h:9%</error>"));
+  for (const provider of ["cmh", "cliproxy", "openai-codex", "anthropic"]) {
+    const content = renderSegment("model", createSegmentContext({
+      model: { id: "claude-sonnet-5", provider }, claudeQuota, usingSubscription: false,
+    })).content;
+    assert.equal(content.includes("5h:"), false);
+    assert.equal(content.includes("week:"), false);
+  }
 });
 
 test("model omits weekly quota for non-Codex main models and the legacy segment stays hidden", () => {
