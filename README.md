@@ -33,7 +33,7 @@ Customizes the default [pi](https://github.com/badlogic/pi-mono) editor with a p
 
 **Context awareness** — Color-coded warnings above 70% (yellow) and above 90% (red) context usage. During streaming, the context segment refreshes from live assistant usage instead of waiting for the next turn. Auto-compact indicator when enabled. If `pi-custom-compaction` is installed and enabled, the powerline automatically hides native context segments so the footer does not show stale post-summary usage.
 
-**Token intelligence** — Smart formatting (1.2k, 45M), used/max/percentage context display, subscription detection, configurable subscription cost display, and weekly ChatGPT Codex quota.
+**Token intelligence** — Smart formatting (1.2k, 45M), used/max/percentage context display, subscription detection, configurable subscription cost display, weekly ChatGPT Codex quota, and five-hour/weekly Claude subscription quota.
 
 **Sticky bash mode** — Toggle bash mode with `ctrl+shift+b` or `/bash-mode`. It keeps a managed shell session alive for the current pi session, shows a dedicated `shell_mode` segment, streams command output into an embedded transcript below the editor, and lets `cd` or exported state persist across commands.
 
@@ -98,7 +98,7 @@ You can also set it in the agent settings file (`~/.pi/agent/settings.json` by d
 
 | Preset | Description |
 |--------|-------------|
-| `default` | Model/thinking/weekly Codex quota, path (basename), git, context, tokens, cost |
+| `default` | Model/thinking/subscription quota, path (basename), git, context, tokens, cost |
 | `minimal` | Just path (basename), git, context |
 | `compact` | Model, git, cost, context |
 | `full` | Everything including hostname, time, abbreviated path |
@@ -199,7 +199,7 @@ Use `powerline.layout` to override segment order and grouping while keeping the 
 
 A present `left`, `right`, or `secondary` array replaces that preset group exactly; an empty array clears it. Omitted groups keep the preset entries and automatically append custom items by their configured `position`. Explicitly listing a segment moves it out of omitted preset groups, and explicitly placed custom items are not auto-appended elsewhere. `disabledSegments` is applied after layout. `separator` accepts any style listed below; omit it to keep the preset’s separator.
 
-`right` segments are pinned to the terminal's right edge. They reserve their rendered width first; left and secondary segments use the remaining space and overflow to the secondary line when needed. Some segments are hidden when they have no value. Weekly quota is rendered inside `model` only for an `openai-codex` main model with a recognized weekly window. The standalone `thinking` segment remains available for layouts that want the separate indicator. Unknown entries are ignored with a startup warning. The old fixed `custom` preset has been removed; combine any preset with `layout` instead.
+`right` segments are pinned to the terminal's right edge. They reserve their rendered width first; left and secondary segments use the remaining space and overflow to the secondary line when needed. Some segments are hidden when they have no value. Subscription quota is rendered inside `model` for supported main providers: weekly capacity for `openai-codex`, and five-hour/weekly capacity for `claude-code` or OAuth-authenticated `anthropic`. The standalone `thinking` segment remains available for layouts that want the separate indicator. Unknown entries are ignored with a startup warning. The old fixed `custom` preset has been removed; combine any preset with `layout` instead.
 
 Set `powerline.padding` to an integer from `0` to `8` to control the outer spaces on each edge of every primary and secondary bar row (including wrapped rows). The default is `1`, preserving the existing layout; malformed or out-of-range values fall back to `1`. Use `0` for a flush-left bar:
 
@@ -242,7 +242,11 @@ For a compact current footer setup:
 
 Use `"model": { "display": "qualified" }` when two providers expose models with the same display name. Set `model.showThinkingLevel` to `false` to hide the inline suffix. Explicit custom layouts containing the standalone `thinking` segment suppress the preset's inline suffix unless `showThinkingLevel: true` is also explicitly configured.
 
-For ChatGPT-backed `openai-codex` main models, the `model` segment also shows remaining weekly capacity as `week:87%` followed by a compact dim reset countdown such as `(6d)`. Remaining capacity below 25% is yellow and below 10% is red; otherwise it is green. The weekly window is identified by its duration, whether Codex returns it as `primary_window` or `secondary_window`. Quota rendering is independent of `cost`, so billable API subagent costs can remain visible. Legacy `weekly_quota` layout entries remain accepted but render nothing.
+The `model` segment shows remaining subscription capacity with the same styling across providers: green normally, yellow below 25%, and red below 10%, followed by a compact dim reset countdown. For ChatGPT-backed `openai-codex` main models, it shows `week:87% (6d)`. The weekly window is identified by its duration, whether Codex returns it as `primary_window` or `secondary_window`.
+
+For `claude-code` and OAuth-authenticated `anthropic` main models, it shows both available windows, for example `5h:80% (2h) week:24% (6d)`. These are the account's aggregate five-hour and seven-day limits, not model-specific weekly buckets. `claude-code` uses the existing access token in Claude Code's `.credentials.json` under `PI_CLAUDE_CODE_CONFIG_DIR`, `CLAUDE_CONFIG_DIR`, or `~/.claude`; the footer never copies, writes, or refreshes that token. Native `anthropic` uses Pi's OAuth credential instead. API-key and gateway models such as CMH do not display local Claude subscription capacity.
+
+Quota queries run in the background at session start, model selection, and agent completion, using Pi's network/proxy configuration. Missing credentials, unavailable windows, and failed requests hide the corresponding indicators rather than assuming full capacity. Claude's usage endpoint is not a stable public API and may change. Quota rendering is independent of `cost`, so billable API subagent costs can remain visible. Legacy `weekly_quota` layout entries remain accepted but render nothing.
 
 `cost.currency` accepts `USD`, `CNY`, `EUR`, `GBP`, `JPY`, `CAD`, `AUD`, `CHF`, `INR`, or `KRW`. Pi reports costs in USD; non-USD display uses a keyless USD FX rate fetched in the background and cached for 24 hours under the Pi agent directory. If no cached rate is available yet, the cost segment renders `-- CODE` until a later footer refresh can use the fetched rate.
 
