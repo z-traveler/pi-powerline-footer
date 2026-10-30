@@ -17,6 +17,7 @@ import type { ColorScheme, ColorValue, SemanticColor, ThemeLike } from "./types.
 export interface PowerlineThemeConfig {
   colors?: unknown;
   icons?: unknown;
+  modelColors?: unknown;
 }
 
 // Default color scheme (uses pi theme colors)
@@ -145,6 +146,46 @@ function loadUserTheme(): ColorScheme {
   userThemeCacheTime = now;
   userThemeCacheKey = cacheKey;
   return userThemeCache;
+}
+
+let modelColorsConfig: PowerlineThemeConfig | null = null;
+let modelColorRules: { model?: string; pattern?: RegExp; color: ColorValue }[] = [];
+
+/** Match rules in file order against the original model name, id, or provider/id. */
+export function resolveModelColor(
+  model: { id: string; name?: string; provider?: string } | undefined,
+  presetColors?: ColorScheme,
+): ColorValue {
+  const config = loadThemeConfig();
+  if (config !== modelColorsConfig) {
+    modelColorsConfig = config;
+    modelColorRules = [];
+    if (Array.isArray(config.modelColors)) {
+      for (const rule of config.modelColors) {
+        if (!isRecord(rule) || typeof rule.color !== "string" || !rule.color.trim()) continue;
+        const color = rule.color.trim() as ColorValue;
+        if (typeof rule.model === "string" && rule.model.trim()) {
+          modelColorRules.push({ model: rule.model.trim(), color });
+        } else if (typeof rule.pattern === "string" && rule.pattern) {
+          try {
+            modelColorRules.push({ pattern: new RegExp(rule.pattern, "i"), color });
+          } catch {
+            // An invalid optional rule must not break footer rendering.
+          }
+        }
+      }
+    }
+  }
+
+  if (model) {
+    const candidates = [model.id, model.name ?? "", ...(model.provider ? [`${model.provider}/${model.id}`] : [])];
+    for (const rule of modelColorRules) {
+      if (candidates.some((candidate) => rule.model !== undefined
+        ? candidate === rule.model
+        : rule.pattern!.test(candidate))) return rule.color;
+    }
+  }
+  return resolveColor("model", presetColors);
 }
 
 /**

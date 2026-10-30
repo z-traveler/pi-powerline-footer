@@ -3,7 +3,7 @@ import { basename } from "node:path";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import type { BuiltinStatusLineSegmentId, RenderedSegment, SegmentContext, SemanticColor, StatusLineSegment, StatusLineSegmentId } from "./types.ts";
 import { normalizeCompactExtensionStatus, normalizeExtensionStatusValue } from "./powerline-config.ts";
-import { fg, applyColor } from "./theme.ts";
+import { fg, applyColor, resolveModelColor } from "./theme.ts";
 import { getIcons, SEP_DOT } from "./icons.ts";
 import { formatUsdCost } from "./currency-rates.ts";
 import { formatQuotaReset } from "./weekly-quota.ts";
@@ -98,7 +98,7 @@ const modelSegment: StatusLineSegment = {
       modelName = modelName.slice(7);
     }
 
-    let content = color(ctx, "model", withIcon(icons.model, modelName));
+    let content = applyColor(ctx.theme, resolveModelColor(ctx.model, ctx.colors), withIcon(icons.model, modelName));
 
     if (opts.showThinkingLevel !== false && ctx.model?.reasoning) {
       const level = ctx.thinkingLevel || "off";

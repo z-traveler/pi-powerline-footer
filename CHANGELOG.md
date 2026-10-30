@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added
+- **Per-model colors** — Configure ordered `modelColors` rules in the plugin's `theme.json`, using exact model names/ids or case-insensitive regular expressions. Thinking, fast-mode, and quota colors remain independent.
+
 ## [0.21.0] - 2026-10-23
 
 ### Highlights

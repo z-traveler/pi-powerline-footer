@@ -635,3 +635,22 @@ Icons can be any string, including `""` when you want to suppress a specific gly
 For npm package installs, this documented agent-dir file is separate from the package files under `~/.pi/agent/npm/node_modules`. The extension reads the agent-dir override first, then falls back to a `theme.json` colocated with the loaded extension file. Use `/reload` or restart Pi after creating or editing `theme.json`.
 
 See `theme.example.json` for all available options.
+
+### Per-model colors
+
+Add `modelColors` to `extensions/powerline-footer/theme.json` in your agent directory (not to Pi settings):
+
+```json
+{
+  "modelColors": [
+    { "model": "Claude Sonnet 5.5", "color": "#fac03d" },
+    { "pattern": "deepseek", "color": "#6e9bc5" },
+    { "pattern": "gpt", "color": "#f5f5f5" },
+    { "pattern": "claude", "color": "#fac03d" }
+  ]
+}
+```
+
+Rules are tried in order; the first match wins. `model` exactly matches the original display name, model id, or `provider/id` (case-sensitive). `pattern` is a JavaScript regular expression, without `/` delimiters, matched case-insensitively against those same values. Put specific exceptions before family patterns. JSON requires backslashes to be escaped, for example `"^gpt-6\\.1-"`. If a rule has both selectors, `model` is used. Invalid regexes and malformed rules are ignored.
+
+Colors accept Pi theme color names or `#RRGGBB`. Unmatched models keep the preset or `colors.model` color. Only the footer model label changes; thinking, `:fast`, and quota suffixes keep their colors. Use `/reload` after editing.
