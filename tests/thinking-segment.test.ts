@@ -1,8 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { FAST_MODE_STATUS_KEY, renderSegment } from "../segments.ts";
 import { rainbow } from "../theme.ts";
 import type { ColorScheme, SegmentContext, ThemeLike } from "../types.ts";
+
+// Keep user model-color rules from overriding this test's explicit colors.
+const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+const agentDir = mkdtempSync(join(tmpdir(), "powerline-thinking-"));
+process.env.PI_CODING_AGENT_DIR = agentDir;
+test.after(() => {
+  if (originalAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
+  else process.env.PI_CODING_AGENT_DIR = originalAgentDir;
+  rmSync(agentDir, { recursive: true, force: true });
+});
 
 function hexAnsi(hex: `#${string}`): string {
   const value = hex.slice(1);

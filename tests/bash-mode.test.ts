@@ -137,6 +137,9 @@ test("matchHistoryEntries returns newest entries when the prefix is empty", () =
 });
 
 test("theme.json can override icons without touching colors", () => {
+  const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+  const agentDir = mkdtempSync(join(tmpdir(), "powerline-icons-"));
+  process.env.PI_CODING_AGENT_DIR = agentDir;
   const themePath = join(process.cwd(), "theme.json");
   const originalTheme = existsSync(themePath) ? readFileSync(themePath, "utf8") : null;
   const originalNerdFonts = process.env.POWERLINE_NERD_FONTS;
@@ -150,6 +153,9 @@ test("theme.json can override icons without touching colors", () => {
     assert.equal(icons.warning, "");
     assert.equal(icons.folder, "dir");
   } finally {
+    if (originalAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
+    else process.env.PI_CODING_AGENT_DIR = originalAgentDir;
+    rmSync(agentDir, { recursive: true, force: true });
     if (originalTheme === null) {
       if (existsSync(themePath)) unlinkSync(themePath);
     } else {

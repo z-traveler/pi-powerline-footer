@@ -21,6 +21,12 @@
     "separator": "dim",
     "border": "borderMuted"
   },
+  "modelColors": [
+    { "model": "Claude Sonnet 5.5", "color": "#fac03d" },
+    { "pattern": "deepseek", "color": "#6e9bc5" },
+    { "pattern": "gpt", "color": "#f5f5f5" },
+    { "pattern": "claude", "color": "#fac03d" }
+  ],
   "icons": {
     "auto": "↯",
     "warning": ""
